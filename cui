@@ -1,0 +1,34 @@
+#!/bin/sh
+
+prog=$(basename $0)
+
+main () {
+    submit
+    return $?
+}
+
+submit () {
+    cat <<EOF | condor_submit
+universe          =  vanilla
+notification      =  never
+executable        =  /bin/sleep
+arguments         =  "600"
+filesystemdomain  =  "hep.wisc.edu"
+queue
+EOF
+}
+
+usage () {
+    echo "Usage: $prog [options]"
+}
+
+while getopts h ARG; do
+    case "${ARG}" in
+        h) usage; exit 0;;
+        *) usage; exit 1;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+main
+exit $?
