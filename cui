@@ -32,24 +32,19 @@ def main():
 
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
     if os.path.exists(x509):
-        context["X509UserProxy"] = x509
+        SUBMIT["X509UserProxy"] = x509
 
     cvmfs = "/cvmfs/cms.hep.wisc.edu" 
     if cvmfs in os.environ.get("PATH", ""):
         attr = Popen(["attr", "-q", "-g revision", cvmfs], stdout=PIPE, stderr=PIPE).wait()
         cvmfsrev = attr.stdout.read()
         if attr.returncode == 0 and cvmfsrev:
-            context["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % cvmfsrev
+            SUBMIT["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % cvmfsrev
 
     with tempdir() as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
             log.debug("writing submit file to %s", submit.name)
-            template(submit, context)
-            submit.write(SUBMIT.format(
-                runtime=RUNTIME,
-                sleep=SLEEP,
-            ))
-            submit.write("queue\n")
+            template(submit, SUBMIT.items())
             submit = submit.name
 
         log.info("submitting UI job")
