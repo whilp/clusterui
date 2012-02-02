@@ -36,7 +36,7 @@ def main():
 
     cvmfs = "/cvmfs/cms.hep.wisc.edu" 
     if cvmfs in os.environ.get("PATH", ""):
-        attr = Popen(["attr", "-q", "-g revision", cvmfs], stdout=PIPE, stderr=PIPE).wait()
+        attr = Popen(["attr", "-q", "-g revision", cvmfs], stdout=PIPE, stderr=PIPE)
         cvmfsrev = attr.stdout.read()
         if attr.returncode == 0 and cvmfsrev:
             SUBMIT["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % cvmfsrev
