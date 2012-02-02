@@ -6,6 +6,7 @@ import sys
 
 from collections import namedtuple
 from contextlib import contextmanager
+from optparse import OptionParser, make_option as Opt
 from shutil import rmtree
 from subprocess import Popen, PIPE
 from tempfile import mkdtemp
@@ -17,10 +18,13 @@ SLEEP = "/bin/sleep"
 log = logging.getLogger(__name__)
 
 def main():
-    global log
+    optparser = OptionParser(usage=__doc__, option_list=options)
+    (opts, args) = optparser.parse_args()
 
-    log.level = logging.DEBUG
-    log.addHandler(logging.StreamHandler())
+    verbose = int(opts.verbose)
+    if verbose >= 0:
+        log.level = max(1, logging.WARNING - (10 * verbose))
+        log.addHandler(logging.StreamHandler())
 
     with tempdir() as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
@@ -55,6 +59,10 @@ def main():
     condor_rm.communicate()
 
     return condor_ssh_to_job.returncode
+
+options = [
+    Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
+]
 
 def tail(file):
     while True:
