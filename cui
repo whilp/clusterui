@@ -1,7 +1,7 @@
 #!/usr/bin/python2.6
 """%prog [options]
 
-Submit a UI job to the cluster and connect to it when it begins to run.
+Submit a UI job and connect to it when it begins to run.
 """
 
 import logging
