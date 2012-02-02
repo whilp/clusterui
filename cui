@@ -11,17 +11,17 @@ main () {
 
     (
     cd "$tmp"
-    log "building UI job in $PWD"
+    log "building job in $PWD"
 
     submit > ./submit
 
-    log "submitting UI job"
+    log "submitting job"
     condor_submit ./submit > /dev/null
 
-    log "waiting for UI job to start running"
+    log "waiting for job to start running"
     jobid=$(monitor log)
 
-    log "connecting to UI job"
+    log "connecting to job"
     condor_ssh_to_job "$jobid"
     )
     return $?
