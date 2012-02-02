@@ -3,17 +3,40 @@
 prog=$(basename $0)
 
 main () {
+    tmp=$(mktemp -d cui-XXXXXXXXXX)
+    trap "rm -rf $tmp" EXIT
+    (
+    cd "$tmp"
     submit
+    jobid=$(monitor log)
+    condor_ssh_to_job "$jobid"
+    )
     return $?
 }
 
+monitor () {
+    log="$1"
+    tail -f "$log" | while read line; do
+        case "$line" in
+            *"Job executing on host:"*)
+                set -- $line
+                jobid="$2"
+                jobid="${jobid#(}"; jobid="${jobid%)}"
+                echo "$jobid"
+                return
+                ;;
+        esac
+    done
+}
+
 submit () {
-    cat <<EOF | condor_submit
+    cat <<EOF | condor_submit > /dev/null
 universe          =  vanilla
 notification      =  never
 executable        =  /bin/sleep
 arguments         =  "600"
-filesystemdomain  =  "hep.wisc.edu"
+log = log
+transfer_executable = false
 queue
 EOF
 }
