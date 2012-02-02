@@ -21,7 +21,7 @@ main () {
     log "waiting for job to start running"
     jobid=$(monitor log)
 
-    log "connecting to job"
+    log "connecting to job $jobid"
     condor_ssh_to_job "$jobid"
     )
     return $?
