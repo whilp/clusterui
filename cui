@@ -55,14 +55,15 @@ getjobid () {
 
 submit () {
     cat <<EOF
-universe          =  vanilla
-notification      =  never
-executable        =  $SLEEP
-arguments         =  "$RUNTIME"
-log = log
-transfer_executable = false
-should_transfer_files = true
-when_to_transfer_output = on_exit
+universe                 =  vanilla
+notification             =  never
+executable               =  $SLEEP
+arguments                =  "$RUNTIME"
+log                      =  log
+transfer_executable      =  false
+should_transfer_files    =  true
+when_to_transfer_output  =  on_exit
+
 queue
 EOF
 }
