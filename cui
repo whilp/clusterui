@@ -108,4 +108,8 @@ queue
 
 Record = namedtuple("Record", "entry id date time message")
 
-main()
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit()
