@@ -30,13 +30,26 @@ def main():
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
 
+    x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
+    if os.path.exists(x509):
+        context["X509UserProxy"] = x509
+
+    cvmfs = "/cvmfs/cms.hep.wisc.edu" 
+    if cvmfs in os.environ.get("PATH", ""):
+        attr = Popen(["attr", "-q", "-g revision", cvmfs], stdout=PIPE, stderr=PIPE).wait()
+        cvmfsrev = attr.stdout.read()
+        if attr.returncode == 0 and cvmfsrev:
+            context["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % cvmfsrev
+
     with tempdir() as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
             log.debug("writing submit file to %s", submit.name)
+            template(submit, context)
             submit.write(SUBMIT.format(
                 runtime=RUNTIME,
                 sleep=SLEEP,
             ))
+            submit.write("queue\n")
             submit = submit.name
 
         log.info("submitting UI job")
@@ -97,18 +110,26 @@ def tempdir(*args, **kwargs):
         log.debug("cleaning up temporary directory %s", tmp)
         rmtree(tmp)
 
-SUBMIT = """\
-universe                 =  vanilla
-notification             =  never
-executable               =  {sleep}
-arguments                =  "{runtime}"
-log                      =  log
-transfer_executable      =  false
-should_transfer_files    =  true
-when_to_transfer_output  =  on_exit
-getenv = true
-queue
-"""
+def template(out, context):
+    out.write("\n".join("%s = %s" % (k, v) for k, v in context))
+    out.write("\n")
+    out.write("queue\n")
+
+SUBMIT = dict(
+    universe="vanilla",
+    notification="never",
+    executable="{sleep}",
+    arguments='"{runtime}"',
+    log="log",
+    transfer_executable="false",
+    should_transfer_files="true",
+    when_to_transfer_output="on_exit",
+    getenv="true",
+    requirements=(
+        'TARGET.Arch = "X86_64" && '
+        'TARGET.HasAFS_OSG && IsSlowSlot=!=true'
+    ),
+)
 
 Record = namedtuple("Record", "entry id date time message")
 
