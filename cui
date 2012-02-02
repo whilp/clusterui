@@ -53,7 +53,7 @@ def main():
         log.debug("condor_submit returned %d", condor_submit.returncode)
 
         if condor_submit.returncode != 0:
-            sys.stderr.write("condor_submit returned %d", condor_submit.returncode)
+            sys.stderr.write("condor_submit returned %d\n" % condor_submit.returncode)
             sys.stdout.write(stdout)
             sys.stderr.write(stderr)
             return condor_submit.returncode
