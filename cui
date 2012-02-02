@@ -31,19 +31,22 @@ def main():
             ))
             submit = submit.name
 
-        log.debug("running condor_submit")
+        log.info("submitting UI job")
         condor_submit = Popen(["condor_submit", submit], stdout=PIPE, stderr=PIPE)
         stdout, stderr = condor_submit.communicate()
         log.debug("condor_submit returned %d", condor_submit.returncode)
+
         if condor_submit.returncode != 0:
             sys.stderr.write("condor_submit returned %d", condor_submit.returncode)
             sys.stdout.write(stdout)
             sys.stderr.write(stderr)
             return condor_submit.returncode
         
+        log.info("waiting for job to begin to run")
         with open(os.path.join(tmp, "log")) as logfile:
             jobid = monitor(tail(logfile))
 
+        log.info("connecting to job")
         condor_ssh_to_job = Popen(["condor_ssh_to_job", jobid])
         condor_ssh_to_job.wait()
 
