@@ -1,106 +1,100 @@
-#!/bin/sh
+#!/usr/bin/env python
 
-RUNTIME=600
-SLEEP="/bin/sleep"
+import logging
+import os
+import sys
 
-prog=$(basename $0)
+from collections import namedtuple
+from contextlib import contextmanager
+from shutil import rmtree
+from subprocess import Popen, PIPE
+from tempfile import mkdtemp
+from time import sleep
 
-main () {
-    tmp=$(mktemp -td cui-XXXXXXXXXX)
-    trap "rm -rf $tmp" EXIT
+RUNTIME = 600
+SLEEP = "/bin/sleep"
 
-    (
-    cd "$tmp"
-    log "building job in $PWD"
+log = logging.getLogger(__name__)
 
-    prepare
+def main():
+    global log
 
-    submit > ./submit
+    log.level = logging.DEBUG
+    log.addHandler(logging.StreamHandler())
 
-    log "submitting job"
-    condor_submit ./submit > /dev/null
+    with tempdir() as tmp:
+        with open(os.path.join(tmp, "submit"), 'w') as submit:
+            log.debug("writing submit file to %s", submit.name)
+            submit.write(SUBMIT.format(
+                runtime=RUNTIME,
+                sleep=SLEEP,
+            ))
+            submit = submit.name
 
-    log "waiting for job to start running"
-    jobid=$(monitor log)
+        log.debug("running condor_submit")
+        condor_submit = Popen(["condor_submit", submit], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = condor_submit.communicate()
+        log.debug("condor_submit returned %d", condor_submit.returncode)
+        if condor_submit.returncode != 0:
+            sys.stderr.write("condor_submit returned %d", condor_submit.returncode)
+            sys.stdout.write(stdout)
+            sys.stderr.write(stderr)
+            return condor_submit.returncode
+        
+        with open(os.path.join(tmp, "log")) as logfile:
+            jobid = monitor(tail(logfile))
 
-    log "connecting to job $jobid"
-    condor_ssh_to_job "$jobid"
-    )
-    return $?
-}
+        condor_ssh_to_job = Popen(["condor_ssh_to_job", jobid])
+        condor_ssh_to_job.wait()
 
-prepare () {
-    X509USERPROXY=
-    proxy=${X509_USER_PROXY:-/tmp/x509up_u$UID}
-    if [ -r "$proxy" ]; then
-        X509USERPROXY="X509UserProxy = $proxy"
-    else
-        log "no X509_USER_PROXY detected at $proxy"
-    fi
+    # We don't really care if condor_rm fails here.
+    condor_rm = Popen(["condor_rm", jobid], stdout=PIPE, stderr=PIPE)
+    condor_rm.communicate()
 
-    REQUIREMENTS=${SITE_REQUIREMENTS}
-}
+    return condor_ssh_to_job.returncode
 
-monitor () {
-    log="$1"
-    tail -f "$log" | while read line; do
-        case "$line" in
-            *"Job submitted from host:"*)
-                jobid=$(getjobid $line)
-                log "job $jobid submitted"
-                ;;
-            *"Job executing on host:"*)
-                log "job $jobid running"
-                echo "$jobid"
-                return
-                ;;
-        esac
-    done
-}
+def tail(file):
+    while True:
+        line = file.readline()
+        if not line:
+            sleep(.2)
+        else:
+            yield line
 
-getjobid () {
-    # Log lines look like:
-    # 001 (030.000.000) 02/02 12:31:01 Job executing on host: <144.92.180.98:46823>
-    set -- $*
-    jobid="$2"
-    jobid="${jobid#(}"; jobid="${jobid%)}"
-    echo "$jobid"
-}
+def monitor(stream):
+    for line in stream:
+        if line == "...\n":
+            continue
+        record = Record(*line.split(None, 4))
+        log.debug("%s %s", record.id, record.message.rstrip())
+        if "Job executing" in record.message:
+            return record.id.strip("()")
 
-submit () {
-    cat <<EOF
+@contextmanager
+def tempdir(*args, **kwargs):
+    tmp = mkdtemp(*args, **kwargs)
+    log.debug("created temporary directory %s", tmp)
+    os.chdir(tmp)
+
+    try:
+        yield tmp
+    finally:
+        log.debug("cleaning up temporary directory %s", tmp)
+        rmtree(tmp)
+
+SUBMIT = """\
 universe                 =  vanilla
 notification             =  never
-executable               =  $SLEEP
-arguments                =  "$RUNTIME"
+executable               =  {sleep}
+arguments                =  "{runtime}"
 log                      =  log
 transfer_executable      =  false
 should_transfer_files    =  true
 when_to_transfer_output  =  on_exit
 getenv = true
-$X509USERPROXY
-$REQUIREMENTS
-
 queue
-EOF
-}
+"""
 
-log () {
-    echo "$*" 1>&2
-}
+Record = namedtuple("Record", "entry id date time message")
 
-usage () {
-    echo "Usage: $prog [options]"
-}
-
-while getopts dhv ARG; do
-    case "${ARG}" in
-        h) usage; exit 0;;
-        *) usage; exit 1;;
-    esac
-done
-shift $(($OPTIND - 1))
-
-main
-
-exit $?
+main()
