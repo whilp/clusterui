@@ -13,6 +13,8 @@ main () {
     cd "$tmp"
     log "building job in $PWD"
 
+    prepare
+
     submit > ./submit
 
     log "submitting job"
@@ -25,6 +27,18 @@ main () {
     condor_ssh_to_job "$jobid"
     )
     return $?
+}
+
+prepare () {
+    X509USERPROXY=
+    proxy=${X509_USER_PROXY:-/tmp/x509up_u$UID}
+    if [ -r "$proxy" ]; then
+        X509USERPROXY="X509UserProxy = $proxy"
+    else
+        log "no X509_USER_PROXY detected at $proxy"
+    fi
+
+    REQUIREMENTS=${SITE_REQUIREMENTS}
 }
 
 monitor () {
@@ -63,6 +77,9 @@ log                      =  log
 transfer_executable      =  false
 should_transfer_files    =  true
 when_to_transfer_output  =  on_exit
+getenv = true
+$X509USERPROXY
+$REQUIREMENTS
 
 queue
 EOF
