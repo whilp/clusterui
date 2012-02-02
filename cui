@@ -30,6 +30,9 @@ def main():
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
 
+
+    SUBMIT["executable"] = SLEEP
+    SUBMIT["arguments"] = '"%s"' % RUNTIME
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
     if os.path.exists(x509):
         SUBMIT["X509UserProxy"] = x509
@@ -113,15 +116,13 @@ def template(out, context):
 SUBMIT = dict(
     universe="vanilla",
     notification="never",
-    executable="{sleep}",
-    arguments='"{runtime}"',
     log="log",
     transfer_executable="false",
     should_transfer_files="true",
     when_to_transfer_output="on_exit",
     getenv="true",
     requirements=(
-        'TARGET.Arch = "X86_64" && '
+        'TARGET.Arch == "X86_64" && '
         'TARGET.HasAFS_OSG && IsSlowSlot=!=true'
     ),
 )
