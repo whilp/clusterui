@@ -102,7 +102,7 @@ def hasx509(submit):
 def hascvmfs(submit):
     cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
     try:
-        attr = Popen(["attr", "-q", "-g revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
+        attr = Popen(["attr", "-q", "-g", "revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
         cvmfsrev = attr.stdout.read()
     except OSError:
         cvmfsrev = "0"
