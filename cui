@@ -173,7 +173,8 @@ SUBMIT = dict(
     getenv="true",
     requirements=(
         'TARGET.Arch == "X86_64" && '
-        'TARGET.HasAFS_OSG && IsSlowSlot=!=true'
+        'TARGET.HasAFS_OSG && IsSlowSlot=!=true && '
+        'TARGET.UidDomain == "hep.wisc.edu"'
     ),
 )
 
