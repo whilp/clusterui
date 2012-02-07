@@ -35,6 +35,8 @@ def main():
     SUBMIT["arguments"] = '"%s"' % RUNTIME
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
     if os.path.exists(x509):
+        # XXX: Can cause condor_submit to fail if a stale/expired proxy is
+        # present.
         SUBMIT["X509UserProxy"] = x509
 
     cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
