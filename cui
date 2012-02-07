@@ -43,8 +43,8 @@ def main():
     hasx509(SUBMIT)
     hascvmfs(SUBMIT)
 
-    cleanup = opts.no_submit or opts.preserve
-    with tempdir(cleanup=cleanup) as tmp:
+    preserve = opts.no_submit or opts.preserve
+    with tempdir(cleanup=not preserve) as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
             log.debug("writing submit file to %s", submit.name)
             template(submit, SUBMIT.items())
