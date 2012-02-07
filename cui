@@ -96,8 +96,11 @@ def hasx509(submit):
 
 def hascvmfs(submit):
     cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
-    attr = Popen(["attr", "-q", "-g revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
-    cvmfsrev = attr.stdout.read()
+    try:
+        attr = Popen(["attr", "-q", "-g revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
+        cvmfsrev = attr.stdout.read()
+    except OSError:
+        cvmfsrev = "0"
         
     submit["requirements"] = (submit.setdefault("requirements", "TRUE") +
         " && TARGET.UWCMS_CVMFS_Revision >= %s" % cvmfsrev)
