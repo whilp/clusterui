@@ -30,21 +30,11 @@ def main():
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
 
-
     SUBMIT["executable"] = SLEEP
     SUBMIT["arguments"] = '"%s"' % RUNTIME
-    x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
-    if os.path.exists(x509):
-        # XXX: Can cause condor_submit to fail if a stale/expired proxy is
-        # present.
-        SUBMIT["X509UserProxy"] = x509
 
-    cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
-    attr = Popen(["attr", "-q", "-g revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
-    cvmfsrev = attr.stdout.read()
-        
-    SUBMIT["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % (
-        cvmfsrev if attr.returncode == 0 else "0")
+    hasx509(SUBMIT)
+    hascvmfs(SUBMIT)
 
     with tempdir() as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
@@ -80,6 +70,22 @@ def main():
 options = [
     Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
 ]
+
+def hasx509(submit):
+    x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
+    if os.path.exists(x509):
+        # XXX: Can cause condor_submit to fail if a stale/expired proxy is
+        # present.
+        submit["X509UserProxy"] = x509
+
+def hascvmfs(submit):
+    cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
+    attr = Popen(["attr", "-q", "-g revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
+    cvmfsrev = attr.stdout.read()
+        
+    submit["requirements"] = (submit.setdefault("requirements", "TRUE")
+        " && TARGET.UWCMS_CVMFS_Revision >= %s" % (
+        cvmfsrev if attr.returncode == 0 else "0"))
 
 def tail(file):
     while True:
