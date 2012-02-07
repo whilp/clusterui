@@ -122,7 +122,7 @@ def monitor(stream):
 
 @contextmanager
 def tempdir(cleanup=True, **kwargs):
-    tmp = mkdtemp(*args, **kwargs)
+    tmp = mkdtemp(**kwargs)
     log.debug("created temporary directory %s", tmp)
     os.chdir(tmp)
 
