@@ -94,6 +94,11 @@ options = [
 ]
 
 def glexec(submit):
+    """This works, but:
+
+    *   the job is in the queue as a different user, so condor_rm won't work
+    *   $HOME doesn't exist on the remote end
+    """
     cert = os.environ.get("GLEXEC_CLIENT_CERT")
     user = olduser = getpwuid(os.getuid())[0]
     if cert:
