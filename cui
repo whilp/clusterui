@@ -37,7 +37,8 @@ def main():
     if os.path.exists(x509):
         SUBMIT["X509UserProxy"] = x509
 
-    attr = Popen(["attr", "-q", "-g revision", cvmfs], stdout=PIPE, stderr=PIPE)
+    cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
+    attr = Popen(["attr", "-q", "-g revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
     cvmfsrev = attr.stdout.read()
         
     SUBMIT["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % (
