@@ -11,6 +11,7 @@ import sys
 from collections import namedtuple
 from contextlib import contextmanager
 from optparse import OptionParser, make_option as Opt
+from pwd import getpwuid
 from shutil import rmtree
 from subprocess import Popen, PIPE
 from tempfile import mkdtemp
@@ -43,8 +44,10 @@ def main():
     hasx509(SUBMIT)
     hascvmfs(SUBMIT)
 
+    prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
     preserve = opts.no_submit or opts.preserve
-    with tempdir(cleanup=not preserve) as tmp:
+    submitdir = os.path.abspath(opts.submit_dir)
+    with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
             log.debug("writing submit file to %s", submit.name)
             template(submit, SUBMIT.items())
@@ -81,6 +84,8 @@ def main():
 
 options = [
     Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
+    Opt("-d", "--submit-dir", default=None,
+        help="create submit directory under SUBMIT_DIR"),
     Opt("-n", "--no-submit", default=False, action="store_true",
         help="don't actually submit the UI job (implies -p)"),
     Opt("-p", "--preserve", default=False, action="store_true",
