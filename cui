@@ -30,8 +30,15 @@ def main():
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
 
-    SUBMIT["executable"] = SLEEP
-    SUBMIT["arguments"] = '"%s"' % RUNTIME
+    if args:
+        exe = args
+        arguments = ' '.join("'%s'" % x for x in args[1:])
+    else:
+        exe = SLEEP
+        arguments = RUNTIME
+
+    SUBMIT["executable"] = exe
+    SUBMIT["arguments"] = arguments
 
     hasx509(SUBMIT)
     hascvmfs(SUBMIT)
