@@ -35,8 +35,14 @@ def main():
     SUBMIT["arguments"] = RUNTIME
 
     hascvmfs(SUBMIT)
-    hasx509(SUBMIT)
-    glexec(SUBMIT)
+    x509 = hasx509(SUBMIT)
+
+    if x509:
+        glexecargs = ["glexec", os.environ.get("SHELL", "/bin/bash")]
+        if args:
+            glexecargs.append("-c")
+        os.environ["GLEXEC_CLIENT_CERT"] = os.path.basename(x509)
+        args = glexecargs + args
 
     prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
     preserve = opts.no_submit or opts.preserve
@@ -67,6 +73,8 @@ def main():
             jobid = monitor(tail(logfile))
 
         log.info("connecting to job")
+        log.debug("running condor_ssh_to_job %s %s", jobid, 
+            ' '.join(repr(x) for x in args))
         condor_ssh_to_job = Popen(["condor_ssh_to_job", jobid] + args)
         condor_ssh_to_job.wait()
 
@@ -119,7 +127,7 @@ def hasx509(submit):
         # XXX: Can cause condor_submit to fail if a stale/expired proxy is
         # present.
         submit["X509UserProxy"] = x509
-        return True
+        return x509
 
 def hascvmfs(submit):
     cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
