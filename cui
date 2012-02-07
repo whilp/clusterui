@@ -80,7 +80,7 @@ def main():
 
 options = [
     Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
-    Opt("-n", "--no-submit", default=False, help="don't actually submit the UI job"),
+    Opt("-n", "--no-submit", default=False, action="store_true", help="don't actually submit the UI job"),
 ]
 
 def hasx509(submit):
