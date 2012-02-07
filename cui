@@ -41,8 +41,9 @@ def main():
     SUBMIT["executable"] = exe
     SUBMIT["arguments"] = arguments
 
-    hasx509(SUBMIT)
     hascvmfs(SUBMIT)
+    hasx509(SUBMIT)
+    glexec(SUBMIT)
 
     prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
     preserve = opts.no_submit or opts.preserve
@@ -92,12 +93,28 @@ options = [
         help="preserve temporary job directory"),
 ]
 
+def glexec(submit):
+    cert = submit.get("X509_USER_PROXY")
+    if not cert:
+        return
+
+    env = os.environ.copy()
+    env["GLEXEC_CLIENT_CERT"] = cert
+
+    args = [getexec(sys.argv[0])] + sys.argv[1:]
+    try:
+        log.debug("re-executing self with glexec")
+        os.execvpe("glexec", args, env)
+    except OSError:
+        return
+
 def hasx509(submit):
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
     if os.path.exists(x509):
         # XXX: Can cause condor_submit to fail if a stale/expired proxy is
         # present.
         submit["X509UserProxy"] = x509
+        return True
 
 def hascvmfs(submit):
     cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
