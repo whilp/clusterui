@@ -31,15 +31,8 @@ def main():
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
 
-    if args:
-        exe = getexec(args[0])
-        arguments = ' '.join("'%s'" % x for x in args[1:])
-    else:
-        exe = SLEEP
-        arguments = RUNTIME
-
-    SUBMIT["executable"] = exe
-    SUBMIT["arguments"] = arguments
+    SUBMIT["executable"] = SLEEP
+    SUBMIT["arguments"] = RUNTIME
 
     hasx509(SUBMIT)
     hascvmfs(SUBMIT)
@@ -73,7 +66,7 @@ def main():
             jobid = monitor(tail(logfile))
 
         log.info("connecting to job")
-        condor_ssh_to_job = Popen(["condor_ssh_to_job", jobid])
+        condor_ssh_to_job = Popen(["condor_ssh_to_job", jobid] + args)
         condor_ssh_to_job.wait()
 
     # We don't really care if condor_rm fails here.
