@@ -94,16 +94,23 @@ options = [
 ]
 
 def glexec(submit):
-    cert = submit.get("X509_USER_PROXY")
+    cert = os.environ.get("GLEXEC_CLIENT_CERT")
+    user = olduser = getpwuid(os.getuid())[0]
+    if cert:
+        log.info("switched to user %s with glexec (GLEXEC_CLIENT_CERT=%s)", user, cert)
+        return
+
+    cert = submit.get("X509UserProxy", os.environ.get("X509_USER_PROXY"))
     if not cert:
+        log.debug("not switching users with glexec (no X509_USER_PROXY)")
         return
 
     env = os.environ.copy()
     env["GLEXEC_CLIENT_CERT"] = cert
 
-    args = [getexec(sys.argv[0])] + sys.argv[1:]
+    args = [sys.executable, getexec(sys.argv[0])] + sys.argv[1:]
+
     try:
-        log.debug("re-executing self with glexec")
         os.execvpe("glexec", args, env)
     except OSError:
         return
