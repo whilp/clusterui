@@ -37,12 +37,11 @@ def main():
     if os.path.exists(x509):
         SUBMIT["X509UserProxy"] = x509
 
-    cvmfs = "/cvmfs/cms.hep.wisc.edu" 
-    if cvmfs in os.environ.get("PATH", ""):
-        attr = Popen(["attr", "-q", "-g revision", cvmfs], stdout=PIPE, stderr=PIPE)
-        cvmfsrev = attr.stdout.read()
-        if attr.returncode == 0 and cvmfsrev:
-            SUBMIT["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % cvmfsrev
+    attr = Popen(["attr", "-q", "-g revision", cvmfs], stdout=PIPE, stderr=PIPE)
+    cvmfsrev = attr.stdout.read()
+        
+    SUBMIT["requirements"] += " && TARGET.UWCMS_CVMFS_Revision >= %s" % (
+        cvmfsrev if attr.returncode == 0 else "0")
 
     with tempdir() as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
