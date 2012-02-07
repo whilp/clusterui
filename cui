@@ -49,6 +49,10 @@ def main():
             template(submit, SUBMIT.items())
             submit = submit.name
 
+        if opts.no_submit:
+            sys.stdout.write("prepared job in %s\n" % tmp)
+            return 0
+
         log.info("submitting UI job")
         condor_submit = Popen(["condor_submit", submit], stdout=PIPE, stderr=PIPE)
         stdout, stderr = condor_submit.communicate()
@@ -76,6 +80,7 @@ def main():
 
 options = [
     Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
+    Opt("-n", "--no-submit", default=False, help="don't actually submit the UI job"),
 ]
 
 def hasx509(submit):
