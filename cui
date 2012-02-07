@@ -46,7 +46,7 @@ def main():
 
     prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
     preserve = opts.no_submit or opts.preserve
-    submitdir = os.path.abspath(opts.submit_dir)
+    submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
     with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
             log.debug("writing submit file to %s", submit.name)
