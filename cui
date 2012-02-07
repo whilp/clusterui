@@ -38,7 +38,7 @@ def main():
     x509 = hasx509(SUBMIT)
 
     if x509:
-        glexecargs = ["glexec", os.environ.get("SHELL", "/bin/bash")]
+        glexecargs = ["-t", "glexec", os.environ.get("SHELL", "/bin/bash")]
         if args:
             glexecargs.append("-c")
         os.environ["GLEXEC_CLIENT_CERT"] = os.path.basename(x509)
