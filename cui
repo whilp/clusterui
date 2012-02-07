@@ -83,7 +83,7 @@ def hascvmfs(submit):
     attr = Popen(["attr", "-q", "-g revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
     cvmfsrev = attr.stdout.read()
         
-    submit["requirements"] = (submit.setdefault("requirements", "TRUE")
+    submit["requirements"] = (submit.setdefault("requirements", "TRUE") +
         " && TARGET.UWCMS_CVMFS_Revision >= %s" % (
         cvmfsrev if attr.returncode == 0 else "0"))
 
