@@ -43,7 +43,8 @@ def main():
     hasx509(SUBMIT)
     hascvmfs(SUBMIT)
 
-    with tempdir() as tmp:
+    cleanup = opts.no_submit or opts.preserve
+    with tempdir(cleanup=cleanup) as tmp:
         with open(os.path.join(tmp, "submit"), 'w') as submit:
             log.debug("writing submit file to %s", submit.name)
             template(submit, SUBMIT.items())
@@ -80,7 +81,10 @@ def main():
 
 options = [
     Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
-    Opt("-n", "--no-submit", default=False, action="store_true", help="don't actually submit the UI job"),
+    Opt("-n", "--no-submit", default=False, action="store_true",
+        help="don't actually submit the UI job (implies -p)"),
+    Opt("-p", "--preserve", default=False, action="store_true",
+        help="preserve temporary job directory"),
 ]
 
 def hasx509(submit):
@@ -117,7 +121,7 @@ def monitor(stream):
             return record.id.strip("()")
 
 @contextmanager
-def tempdir(*args, **kwargs):
+def tempdir(cleanup=True, **kwargs):
     tmp = mkdtemp(*args, **kwargs)
     log.debug("created temporary directory %s", tmp)
     os.chdir(tmp)
@@ -125,8 +129,9 @@ def tempdir(*args, **kwargs):
     try:
         yield tmp
     finally:
-        log.debug("cleaning up temporary directory %s", tmp)
-        rmtree(tmp)
+        if cleanup:
+            log.debug("cleaning up temporary directory %s", tmp)
+            rmtree(tmp)
 
 def template(out, context):
     out.write("\n".join("%s = %s" % (k, v) for k, v in context))
