@@ -125,7 +125,6 @@ def getexec(path):
     base = os.path.basename(path)
     for dir in os.environ.get("PATH", "").split(os.pathsep):
         path = os.path.join(dir, base)
-        print path
         if isexec(path):
             return path
 
