@@ -135,7 +135,7 @@ level = 9
 def envencode(env):
     blobs = [b64encode("%s=%s" % v) for v in env.items()]
 
-    return b64encode(zlib.compress(" ".join(blobs)))
+    return b64encode(zlib.compress(" ".join(blobs)), 9)
 
 def envdecode(env):
     blobs = zlib.decompress(b64decode(env)).split(" ")
