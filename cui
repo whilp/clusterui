@@ -61,7 +61,9 @@ def main():
 
     jobid = opts.id
     if jobid:
+        global tempdir
         tempdir = faketempdir
+        preserve = submitdir = prefix = None
     else:
         prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
         preserve = opts.no_submit or opts.preserve
@@ -75,9 +77,11 @@ def main():
             args = remoteargs + args
             condor_ssh_to_job = connect(jobid, args)
         except ProcessError, e:
-            sys.stderr.write("{process.cmd} returned {returncode}\n".format(**vars(e)))
-            sys.stdout.write(e.process.stdout.read())
-            sys.stderr.write(e.process.stderr.read())
+            log.debug("%s returned %d", e.process.cmd, e.returncode)
+            if e.process.stdout:
+                sys.stdout.write(e.process.stdout.read())
+            if e.process.stderr:
+                sys.stderr.write(e.process.stderr.read())
 
             return e.returncode
 
@@ -192,11 +196,13 @@ def glexec(submit):
 
 def connect(jobid, args):
     log.info("connecting to job")
-    log.debug("running condor_ssh_to_job %s %s", jobid, 
-        ' '.join(repr(x) for x in args))
     args = ["condor_ssh_to_job", jobid] + args
     condor_ssh_to_job = Process(args, stdout=None, stderr=None)
-    condor_ssh_to_job.check()
+    try:
+        condor_ssh_to_job.check()
+    except ProcessError:
+        log.warn("failed to connect to job %s", jobid)
+        raise
 
     return condor_ssh_to_job
 
@@ -207,13 +213,17 @@ def submit(tmp, jdl, no_submit=False, **kwargs):
         submit = submit.name
 
     if no_submit:
-        sys.stdout.write("prepared job in %s\n" % tmp)
-        return 0
+        log.debug("prepared job in %s", tmp)
+        return
 
     log.info("submitting UI job")
     args = ["condor_submit", submit]
     condor_submit = Process(args)
-    condor_submit.check()
+    try:
+        condor_submit.check()
+    except ProcessError:
+        log.debug("failed to submit UI job")
+        raise
 
     log.info("waiting for job to begin to run")
     with open(os.path.join(tmp, "log")) as logfile:
