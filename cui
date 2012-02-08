@@ -78,8 +78,10 @@ def main():
             condor_ssh_to_job = connect(jobid, args)
         except ProcessError, e:
             sys.stderr.write("{process.cmd} returned {returncode}\n".format(**vars(e)))
-            sys.stdout.write(e.process.stdout.read())
-            sys.stderr.write(e.process.stderr.read())
+            if e.process.stdout:
+                sys.stdout.write(e.process.stdout.read())
+            if e.process.stderr:
+                sys.stderr.write(e.process.stderr.read())
 
             return e.returncode
 
