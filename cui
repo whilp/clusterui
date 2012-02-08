@@ -52,6 +52,7 @@ def main():
             "/tmp/x509_u%d" % os.getuid()))
 
     if opts.glexec:
+        log.debug("configuring glexec using cert %s", cert)
         # The cert will end up in the scratch directory on the remote end.
         os.environ["GLEXEC_CLIENT_CERT"] = os.path.basename(cert)
         phase = "preglexec"
@@ -98,9 +99,11 @@ options = [
 
 def remote(args, **kwargs):
     phase = kwargs.get("remote", "run")
+    log.debug("beginning remote phase %s", phase)
 
     fn = phases.get(phase)
     if not fn:
+        log.debug("XXX local run")
         shell = env.get("SHELL", os.environ.get("SHELL", "/bin/bash"))
         return os.execve(shell, args, env)
 
@@ -111,21 +114,24 @@ def preglexec(args, **kwargs):
     # Encoding the environment with JSON is only slightly more expensive (time,
     # space) than the following, which has the benefit of clarity:
     # "\0".join("%s=%s" % v for v in os.environ.items())
+    log.debug("preparing environment for glexec")
     env = dict(os.environ.copy())
     env["GLEXEC_ENV"] = envencode(env)
     glexecargs = [sys.executable, getexecp(sys.argv[0]),
         "-r", "postglexec", "--"]
     glexecargs.extend(args)
+    log.debug("running glexec %s", " ".join(repr(x) for x in glexecargs))
     os.execvpe("glexec", glexecargs, env)
 
 def postglexec(args, **kwargs):
+    log.debug("restoring environment after glexec")
     env = envdecode(os.environ.pop("GLEXEC_ENV"))
     os.environ.update(env)
     shell = [env.get("SHELL", os.environ.get("SHELL", "/bin/bash"))]
     if args:
         shell.append("-c")
     shell.extend(args)
-    log.warn("shell %r", shell)
+    log.debug("running %s %s", shell[0], " ".join(repr(x) for x in shell[1:]))
     return os.execve(shell[0], shell, env)
 
 phases = dict(
