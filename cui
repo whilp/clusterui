@@ -89,6 +89,8 @@ options = [
         help="switch to grid user"),
     Opt("-r", "--remote", default=None, action="store",
         help="operate in remote (client) mode; internal"),
+    Opt("-i", "--id", default=None, action="store",
+        help="connect to existing job ID"),
 ]
 
 def remote(args, **kwargs):
