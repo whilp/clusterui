@@ -60,29 +60,9 @@ def main():
     preserve = opts.no_submit or opts.preserve
     submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
     with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
-        with open(os.path.join(tmp, "submit"), 'w') as submit:
-            log.debug("writing submit file to %s", submit.name)
-            template(submit, SUBMIT.items())
-            submit = submit.name
-
-        if opts.no_submit:
-            sys.stdout.write("prepared job in %s\n" % tmp)
-            return 0
-
-        log.info("submitting UI job")
-        condor_submit = Popen(["condor_submit", submit], stdout=PIPE, stderr=PIPE)
-        stdout, stderr = condor_submit.communicate()
-        log.debug("condor_submit returned %d", condor_submit.returncode)
-
-        if condor_submit.returncode != 0:
-            sys.stderr.write("condor_submit returned %d\n" % condor_submit.returncode)
-            sys.stdout.write(stdout)
-            sys.stderr.write(stderr)
-            return condor_submit.returncode
-        
-        log.info("waiting for job to begin to run")
-        with open(os.path.join(tmp, "log")) as logfile:
-            jobid = monitor(tail(logfile))
+        ret = submit(tmp, SUBMIT, **vars(opts))
+        if ret not in (0, None):
+            return ret
 
         args = remoteargs + args
         log.info("connecting to job")
@@ -187,6 +167,31 @@ def glexec(submit):
         os.execvpe("glexec", args, env)
     except OSError:
         return
+
+def submit(tmp, jdl, no_submit=False, **kwargs):
+    with open(os.path.join(tmp, "submit"), 'w') as submit:
+        log.debug("writing submit file to %s", submit.name)
+        template(submit, SUBMIT.items())
+        submit = submit.name
+
+    if opts.no_submit:
+        sys.stdout.write("prepared job in %s\n" % tmp)
+        return 0
+
+    log.info("submitting UI job")
+    condor_submit = Popen(["condor_submit", submit], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = condor_submit.communicate()
+    log.debug("condor_submit returned %d", condor_submit.returncode)
+
+    if condor_submit.returncode != 0:
+        sys.stderr.write("condor_submit returned %d\n" % condor_submit.returncode)
+        sys.stdout.write(stdout)
+        sys.stderr.write(stderr)
+        return condor_submit.returncode
+    
+    log.info("waiting for job to begin to run")
+    with open(os.path.join(tmp, "log")) as logfile:
+        jobid = monitor(tail(logfile))
 
 def hasx509(submit):
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
