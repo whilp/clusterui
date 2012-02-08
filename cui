@@ -64,7 +64,9 @@ def main():
     submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
     with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
         try:
-            jobid = submit(tmp, SUBMIT, **vars(opts))
+            jobid = opts.id
+            if not jobid:
+                jobid = submit(tmp, SUBMIT, **vars(opts))
 
             args = remoteargs + args
             condor_ssh_to_job = connect(jobid, args)
