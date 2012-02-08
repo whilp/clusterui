@@ -126,7 +126,7 @@ def preglexec(args, **kwargs):
     glexecargs = [sys.executable, getexecp(sys.argv[0]),
         "-r", "postglexec", "--"]
     glexecargs.extend(args)
-    log.debug("running glexec %s", " ".join(repr(x) for x in glexecargs))
+    log.debug("running `glexec %s`", " ".join(repr(x) for x in glexecargs))
     os.execvpe("glexec", glexecargs, env)
 
 def postglexec(args, **kwargs):
@@ -137,7 +137,7 @@ def postglexec(args, **kwargs):
     if args:
         shell.append("-c")
     shell.extend(args)
-    log.debug("running %s %s", shell[0], " ".join(repr(x) for x in shell[1:]))
+    log.debug("running `%s %s`", shell[0], " ".join(repr(x) for x in shell[1:]))
     return os.execve(shell[0], shell, env)
 
 phases = dict(
@@ -303,7 +303,7 @@ def monitor(stream):
         if line == "...\n":
             continue
         record = Record(*line.split(None, 4))
-        log.debug("%s %s", record.id, record.message.rstrip())
+        log.debug("log update: %s %s", record.id, record.message.rstrip())
         if "Job executing" in record.message:
             return record.id.strip("()")
 
