@@ -61,7 +61,9 @@ def main():
 
     jobid = opts.id
     if jobid:
+        global tempdir
         tempdir = faketempdir
+        preserve = submitdir = prefix = None
     else:
         prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
         preserve = opts.no_submit or opts.preserve
