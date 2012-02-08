@@ -131,9 +131,14 @@ phases = dict(
     postglexec=postglexec,
 )
 
-level = 9
+envblacklist = ("HOME", "LOGNAME", "USER", "X509_USER_PROXY", "_")
+def envblacklisted(key, blacklist=envblacklist):
+    return key in envblacklist \
+        or key.startswith("_CONDOR")
+
 def envencode(env):
-    blobs = [b64encode("%s=%s" % v) for v in env.items()]
+    blobs = [b64encode("%s=%s" % (k, v)) for k, v in env.items()
+                if not envblacklisted(k)]
 
     return b64encode(zlib.compress(" ".join(blobs)), 9)
 
