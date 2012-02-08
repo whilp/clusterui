@@ -59,12 +59,16 @@ def main():
 
     remoteargs.extend(["-r", phase, "--"])
 
-    prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
-    preserve = opts.no_submit or opts.preserve
-    submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
+    jobid = opts.id
+    if jobid:
+        tempdir = faketempdir
+    else:
+        prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
+        preserve = opts.no_submit or opts.preserve
+        submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
+
     with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
         try:
-            jobid = opts.id
             if not jobid:
                 jobid = submit(tmp, SUBMIT, **vars(opts))
 
@@ -315,6 +319,14 @@ def tempdir(cleanup=True, **kwargs):
         if cleanup:
             log.debug("cleaning up temporary directory %s", tmp)
             rmtree(tmp)
+
+@contextmanager
+def faketempdir(**kwargs):
+    log.debug("not creating temporary directory")
+    try:
+        yield None
+    finally:
+        return
 
 def template(out, context):
     out.write("\n".join("%s = %s" % (k, v) for k, v in context))
