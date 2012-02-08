@@ -140,7 +140,7 @@ def envencode(env):
     blobs = [b64encode("%s=%s" % (k, v)) for k, v in env.items()
                 if not envblacklisted(k)]
 
-    return b64encode(zlib.compress(" ".join(blobs)), 9)
+    return b64encode(zlib.compress(" ".join(blobs), 9))
 
 def envdecode(env):
     blobs = zlib.decompress(b64decode(env)).split(" ")
