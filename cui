@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from optparse import OptionParser, make_option as Opt
 from pwd import getpwuid
 from shutil import rmtree
-from subprocess import Popen, PIPE
+from subprocess import CalledProcessError, Popen, PIPE
 from tempfile import mkdtemp
 from time import sleep
 
@@ -65,14 +65,10 @@ def main():
             return ret
 
         args = remoteargs + args
-        log.info("connecting to job")
-        log.debug("running condor_ssh_to_job %s %s", jobid, 
-            ' '.join(repr(x) for x in args))
-        condor_ssh_to_job = Popen(["condor_ssh_to_job", jobid] + args)
-        condor_ssh_to_job.wait()
+        condor_ssh_to_job = connect(jobid, args)
 
     # We don't really care if condor_rm fails here.
-    condor_rm = Popen(["condor_rm", jobid], stdout=PIPE, stderr=PIPE)
+    condor_rm = Process(["condor_rm", jobid])
     condor_rm.communicate()
 
     return condor_ssh_to_job.returncode
@@ -170,30 +166,60 @@ def glexec(submit):
     except OSError:
         return
 
+def connect(jobid, args):
+    log.info("connecting to job")
+    log.debug("running condor_ssh_to_job %s %s", jobid, 
+        ' '.join(repr(x) for x in args))
+    args = ["condor_ssh_to_job", jobid] + args
+    condor_ssh_to_job = Process(args, stdout=None, stderr=None)
+    condor_ssh_to_job.check()
+
+    return condor_ssh_to_job
+
 def submit(tmp, jdl, no_submit=False, **kwargs):
     with open(os.path.join(tmp, "submit"), 'w') as submit:
         log.debug("writing submit file to %s", submit.name)
         template(submit, SUBMIT.items())
         submit = submit.name
 
-    if opts.no_submit:
+    if no_submit:
         sys.stdout.write("prepared job in %s\n" % tmp)
         return 0
 
     log.info("submitting UI job")
-    condor_submit = Popen(["condor_submit", submit], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = condor_submit.communicate()
-    log.debug("condor_submit returned %d", condor_submit.returncode)
+    args = ["condor_submit", submit]
+    condor_submit = Process(args)
+    condor_submit.check()
 
-    if condor_submit.returncode != 0:
-        sys.stderr.write("condor_submit returned %d\n" % condor_submit.returncode)
-        sys.stdout.write(stdout)
-        sys.stderr.write(stderr)
-        return condor_submit.returncode
-    
     log.info("waiting for job to begin to run")
     with open(os.path.join(tmp, "log")) as logfile:
         jobid = monitor(tail(logfile))
+
+    return jobid
+
+class ProcessError(CalledProcessError):
+    
+    def __init__(self, process=None, **kwargs):
+        super(ProcessError, self).__init__(
+            process.returncode, 
+            ' '.join(process.args),
+            **kwargs)
+        self.process = process
+
+class Process(Popen):
+    
+    def __init__(self, args, stdout=PIPE, stderr=PIPE, **kwargs):
+        super(Process, self).__init__(args, 
+            stdout=stdout,
+            stderr=stderr,
+            **kwargs)
+        self.args = args
+
+    def check(self):
+        ret = self.wait()
+
+        if ret != 0:
+            raise ProcessError(self)
 
 def hasx509(submit):
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
@@ -206,9 +232,9 @@ def hasx509(submit):
 def hascvmfs(submit):
     cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
     try:
-        attr = Popen(["attr", "-q", "-g", "revision", cmscvmfs], stdout=PIPE, stderr=PIPE)
+        attr = Process(["attr", "-q", "-g", "revision", cmscvmfs])
         cvmfsrev = attr.stdout.read()
-    except OSError:
+    except (ProcessError, OSError):
         cvmfsrev = "0"
         
     submit["requirements"] = (submit.setdefault("requirements", "TRUE") +
