@@ -209,8 +209,8 @@ def submit(tmp, jdl, no_submit=False, **kwargs):
         submit = submit.name
 
     if no_submit:
-        sys.stdout.write("prepared job in %s\n" % tmp)
-        return 0
+        log.debug("prepared job in %s", tmp)
+        return
 
     log.info("submitting UI job")
     args = ["condor_submit", submit]
