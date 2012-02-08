@@ -227,12 +227,16 @@ class ProcessError(CalledProcessError):
 class Process(Popen):
     
     def __init__(self, args, stdout=PIPE, stderr=PIPE, **kwargs):
+        self.args = args
+        self.cmd = args[0] + " " + " ".join(repr(x) for x in args[1:])
         super(Process, self).__init__(args, 
             stdout=stdout,
             stderr=stderr,
             **kwargs)
-        self.args = args
-        self.cmd = args[0] + " ".join(repr(x) for x in args[1:])
+
+    def _execute_child(self, *args, **kwargs):
+        log.debug("running `%s`", self.cmd)
+        return super(Process, self)._execute_child(*args, **kwargs)
 
     def check(self):
         ret = self.wait()
