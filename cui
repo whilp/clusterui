@@ -196,8 +196,6 @@ def glexec(submit):
 
 def connect(jobid, args):
     log.info("connecting to job")
-    log.debug("running condor_ssh_to_job %s %s", jobid, 
-        ' '.join(repr(x) for x in args))
     args = ["condor_ssh_to_job", jobid] + args
     condor_ssh_to_job = Process(args, stdout=None, stderr=None)
     condor_ssh_to_job.check()
