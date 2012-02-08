@@ -224,6 +224,7 @@ class Process(Popen):
             stderr=stderr,
             **kwargs)
         self.args = args
+        self.cmd = args[0] + " ".join(repr(x) for x in args[1:])
 
     def check(self):
         ret = self.wait()
