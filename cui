@@ -34,6 +34,7 @@ def main():
     if verbose >= 0:
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
+    opts.verbose = verbose
 
     if opts.remote:
         return remote(args, **vars(opts))
@@ -44,7 +45,7 @@ def main():
     hascvmfs(SUBMIT)
     x509 = hasx509(SUBMIT)
 
-    remoteargs = ["-t", getexecp(sys.argv[0])]
+    remoteargs = ["-t", getexecp(sys.argv[0]), "-v", str(verbose)]
     phase = "run"
 
     cert = os.environ.get("GLEXEC_CLIENT_CERT",
@@ -129,6 +130,7 @@ def preglexec(args, **kwargs):
     env = dict(os.environ.copy())
     env["GLEXEC_ENV"] = envencode(env)
     glexecargs = [sys.executable, getexecp(sys.argv[0]),
+        "-v", str(kwargs.get("verbose", -1)),
         "-r", "postglexec", "--"]
     glexecargs.extend(args)
     log.debug("running `glexec %s`", " ".join(repr(x) for x in glexecargs))
