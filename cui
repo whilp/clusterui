@@ -214,6 +214,11 @@ def envdecode(env):
     )
 
 def discover(user):
+    """Find running UI jobs for *user*.
+
+    Returns a single jobid string or None if no jobs are found. *user* is a
+    string username matching a Condor 'Owner' ClassAd.
+    """
     condor_q = Process(["condor_q",
         "-con", (
             "IsUIJob == true && "
@@ -228,6 +233,12 @@ def discover(user):
         return jobids[0]
 
 def connect(jobid, args):
+    """Connect to running UI job *jobid*.
+
+    Executes `condor_ssh_to_job` with *args* and returns a :class:`Process`
+    object. Raises :class:`ProcessError` if `condor_ssh_to_job` returns a value
+    other than 0.
+    """
     log.info("connecting to job")
 
     condor_ssh_to_job = Process(["condor_ssh_to_job", jobid] + args,
@@ -241,6 +252,16 @@ def connect(jobid, args):
     return condor_ssh_to_job
 
 def submit(tmp, jdl, no_submit=False, **kwargs):
+    """Submit a UI job described by *jdl* and found in the *tmp* directory.
+
+    *tmp* is a path to a temporary directory. The *jdl* mapping is passed to
+    :func:`template` and its output is written to a new file named `submit` in
+    *tmp*. If *no_submit* is True, returns None after the submit file has been
+    written. If *no_submit* is False, the job is submitted using `condor_submit`
+    and its log is monitored until the job begins running. Returns the string ID
+    of the running job. *kwargs* are currently ignored. Raises
+    :class:`ProcessError` if `condor_submit` returns a value other than 0.
+    """
     with open(os.path.join(tmp, "submit"), 'w') as submit:
         log.debug("writing submit file to %s", submit.name)
         template(submit, SUBMIT.items())
