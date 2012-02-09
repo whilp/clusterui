@@ -393,10 +393,10 @@ def monitor(stream):
 def submitdir(cleanup=True, user=None, create=True, **kwargs):
     """Create a submit directory, removing it and its contents.
 
-    *kwargs* are passed to :func:`mkdtemp` to create the directory. Sets the
-    current working directory to the temporary directory and yields control.
-    Then, if *cleanup* is True, removes the temporary directory and its
-    contents.
+    *kwargs* are passed to :func:`mkdtemp` to create a temporary directory if
+    *create* is True. Sets the current working directory to the temporary
+    directory and yields control. Then, if *cleanup* and *create* are True,
+    calls :func:`cleanup` and removes the temporary directory and its contents.
     """
     if create:
         tmp = mkdtemp(**kwargs)
