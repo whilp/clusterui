@@ -286,6 +286,11 @@ def submit(tmp, jdl, no_submit=False, **kwargs):
     return jobid
 
 class ProcessError(CalledProcessError):
+    """Raised when a :class:`Process` fails.
+    
+    Prepares the arguments for :class:`subprocess.CalledProcessError` using
+    *process* and stores it in :attr:`process` for later inspection.
+    """
     
     def __init__(self, process=None, **kwargs):
         super(ProcessError, self).__init__(
@@ -295,6 +300,10 @@ class ProcessError(CalledProcessError):
         self.process = process
 
 class Process(Popen):
+    """A process.
+
+    Stores *args* in :attr:`args` and formats :attr:`cmd` for later inspection.
+    """
     
     def __init__(self, args, stdout=PIPE, stderr=PIPE, **kwargs):
         self.args = args
@@ -305,10 +314,12 @@ class Process(Popen):
             **kwargs)
 
     def _execute_child(self, *args, **kwargs):
+        """Log a command before executing it."""
         log.debug("running `%s`", self.cmd)
         return super(Process, self)._execute_child(*args, **kwargs)
 
     def check(self):
+        """Wait for the process to return, raising :class:`ProcessError` if it returns a value other than 0."""
         ret = self.wait()
 
         if ret != 0:
