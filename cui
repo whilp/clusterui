@@ -492,7 +492,7 @@ SUBMIT = dict(
     requirements=(
         'TARGET.Arch == "X86_64" && '
         'TARGET.HasAFS_OSG && IsSlowSlot=!=true && '
-        'TARGET.MaxJobRetirementTime > 3600*12 && '
+        'TARGET.IsDedicated =?= true && '
         'TARGET.UidDomain == "hep.wisc.edu"'
     ),
 )
