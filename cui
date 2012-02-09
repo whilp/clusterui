@@ -480,6 +480,7 @@ SUBMIT = dict(
 SUBMIT["+IsUIJob"] = "true"
 
 Record = namedtuple("Record", "entry id date time message")
+"""A Condor job log record."""
 
 if __name__ == "__main__":
     try:
