@@ -19,7 +19,7 @@ from subprocess import CalledProcessError, Popen, PIPE
 from tempfile import mkdtemp
 from time import sleep
 
-RUNTIME = 600
+RUNTIME = 3600
 SLEEP = "/bin/sleep"
 
 log = logging.getLogger(__name__)
