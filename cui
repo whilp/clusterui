@@ -122,9 +122,6 @@ def remote(args, **kwargs):
 
 def preglexec(args, **kwargs):
     # https://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/GLExec_Environment_Wrap_and_Unwrap_scripts
-    # Encoding the environment with JSON is only slightly more expensive (time,
-    # space) than the following, which has the benefit of clarity:
-    # "\0".join("%s=%s" % v for v in os.environ.items())
     log.debug("preparing environment for glexec")
     env = dict(os.environ.copy())
     env["GLEXEC_ENV"] = envencode(env)
