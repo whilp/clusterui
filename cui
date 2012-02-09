@@ -357,6 +357,7 @@ SUBMIT = dict(
         'TARGET.UidDomain == "hep.wisc.edu"'
     ),
 )
+SUBMIT["+IsUIJob"] = "true"
 
 Record = namedtuple("Record", "entry id date time message")
 
