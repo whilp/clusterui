@@ -72,7 +72,7 @@ def main():
         preserve = submitdir = prefix = None
     else:
         prefix = "%s-%s-" % ("clusterui", user)
-        preserve = opts.no_submit or opts.preserve or opts.persist
+        preserve = opts.preserve or opts.persist
         submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
 
     with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
@@ -114,8 +114,6 @@ options = [
         help="don't switch to grid user"),
     Opt("-i", "--id", default=None, action="store",
         help="connect to existing job ID"),
-    Opt("-n", "--no-submit", default=False, action="store_true",
-        help="don't actually submit the UI job (implies -p)"),
     Opt("-p", "--preserve", default=False, action="store_true",
         help="preserve temporary job directory"),
     Opt("-r", "--remote", default=None, action="store",
@@ -258,25 +256,20 @@ def connect(jobid, args):
 
     return condor_ssh_to_job
 
-def submit(tmp, jdl, no_submit=False, **kwargs):
+def submit(tmp, jdl, **kwargs):
     """Submit a UI job described by *jdl* and found in the *tmp* directory.
 
     *tmp* is a path to a temporary directory. The *jdl* mapping is passed to
     :func:`template` and its output is written to a new file named `submit` in
-    *tmp*. If *no_submit* is True, returns None after the submit file has been
-    written. If *no_submit* is False, the job is submitted using `condor_submit`
-    and its log is monitored until the job begins running. Returns the string ID
-    of the running job. *kwargs* are currently ignored. Raises
-    :class:`ProcessError` if `condor_submit` returns a value other than 0.
+    *tmp*. The job is submitted using `condor_submit` and its log is monitored
+    until the job begins running. Returns the string ID of the running job.
+    *kwargs* are currently ignored. Raises :class:`ProcessError` if
+    `condor_submit` returns a value other than 0.
     """
     with open(os.path.join(tmp, "submit"), 'w') as submit:
         log.debug("writing submit file to %s", submit.name)
         template(submit, SUBMIT.items())
         submit = submit.name
-
-    if no_submit:
-        log.debug("prepared job in %s", tmp)
-        return
 
     log.info("submitting UI job")
     condor_submit = Process(["condor_submit", submit])
