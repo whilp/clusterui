@@ -63,9 +63,9 @@ def main():
     user = getuser()
     cert = os.environ.get("GLEXEC_CLIENT_CERT",
         os.environ.get("X509_USER_PROXY",
-            "/tmp/x509_u%d" % os.getuid()))
+            "/tmp/x509up_u%d" % os.getuid()))
 
-    if opts.glexec:
+    if opts.glexec and os.path.isfile(cert) and os.access(cert, os.R_OK):
         log.debug("configuring glexec using cert %s", cert)
         # The cert will end up in the scratch directory on the remote end.
         os.environ["GLEXEC_CLIENT_CERT"] = os.path.basename(cert)
