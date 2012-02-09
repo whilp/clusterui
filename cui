@@ -91,6 +91,7 @@ def main():
 
         # We don't really care if condor_rm fails here.
         with open(os.devnull, 'w') as null:
+            jobid = ".".join(jobid.split(".")[:2])
             condor_rm = Process(["condor_rm", jobid], stdout=null, stderr=null)
             condor_rm.wait()
 
