@@ -104,6 +104,11 @@ def main():
 
             ret = e.returncode
 
+    try:
+        cleanupjob(tmp, user)
+    except ProcessError:
+        pass
+
     return ret
 
 options = [
@@ -404,7 +409,7 @@ def monitor(stream):
             return record.id.strip("()")
 
 @contextmanager
-def submitdir(cleanup=True, user=None, create=True, **kwargs):
+def submitdir(cleanup=True, create=True, **kwargs):
     """Create a submit directory, removing it and its contents.
 
     *kwargs* are passed to :func:`mkdtemp` to create a temporary directory if
@@ -425,9 +430,6 @@ def submitdir(cleanup=True, user=None, create=True, **kwargs):
 
         log.debug("cleaning up temporary directory %s", tmp)
         rmtree(tmp)
-        if user is None:
-            user = getuser()
-        cleanupjob(tmp, user)
 
 def template(out, context):
     """Format iterable JDL *context* and write it to *out*.
