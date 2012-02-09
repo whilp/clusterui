@@ -132,13 +132,23 @@ def remote(args, remote="run", **kwargs):
     phase = remote
     log.debug("beginning remote phase %s", phase)
 
-    fn = phases.get(phase)
-    if not fn:
-        log.debug("XXX local run")
-        shell = env.get("SHELL", os.environ.get("SHELL", "/bin/bash"))
-        return os.execve(shell, args, env)
-
+    fn = phases.get(phase, run)
     fn(args, **kwargs)
+
+def run(args, env=os.environ, shell="/bin/bash", **kwargs):
+    """Executes a shell.
+
+    Uses *shell* if *env* does not contain a SHELL key. If *args* is not empty,
+    they will be passed with '-c' to the shell. *kwargs* is ignored.
+    """
+    shell = [env.get("SHELL", shell)]
+
+    if args:
+        shell.append("-c")
+    shell.extend(args)
+
+    log.debug("running `%s %s`", shell[0], " ".join(repr(x) for x in shell[1:]))
+    return os.execv(shell[0], shell)
 
 def preglexec(args, verbose=0, **kwargs):
     """Prepare the runtime environment for glexec.
@@ -165,18 +175,14 @@ def postglexec(args, **kwargs):
     """Restore the runtime environment after glexec.
 
     Decodes the pre-glexec environment encoded in `$GLEXEC_ENV` using
-    :func:`envdecode` and uses it to update :data:`os.environ` before executing
-    `$SHELL`. If *args* is not empty, they will be passed with '-c' to `$SHELL`.
+    :func:`envdecode` and uses it to update :data:`os.environ` before calling
+    :func:`run`.
     """
     log.debug("restoring environment after glexec")
     env = envdecode(os.environ.pop("GLEXEC_ENV"))
     os.environ.update(env)
-    shell = [env.get("SHELL", os.environ.get("SHELL", "/bin/bash"))]
-    if args:
-        shell.append("-c")
-    shell.extend(args)
-    log.debug("running `%s %s`", shell[0], " ".join(repr(x) for x in shell[1:]))
-    return os.execve(shell[0], shell, env)
+
+    run(args, **kwargs)
 
 # Remote runtime phases.
 phases = dict(
