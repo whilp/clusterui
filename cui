@@ -171,33 +171,6 @@ def envdecode(env):
         b64decode(blob).split("=", 1) for blob in blobs
     )
 
-def glexec(submit):
-    """This works, but:
-
-    *   the job is in the queue as a different user, so condor_rm won't work
-    *   $HOME doesn't exist on the remote end
-    """
-    cert = os.environ.get("GLEXEC_CLIENT_CERT")
-    user = olduser = getpwuid(os.getuid())[0]
-    if cert:
-        log.info("switched to user %s with glexec (GLEXEC_CLIENT_CERT=%s)", user, cert)
-        return
-
-    cert = submit.get("X509UserProxy", os.environ.get("X509_USER_PROXY"))
-    if not cert:
-        log.debug("not switching users with glexec (no X509_USER_PROXY)")
-        return
-
-    env = os.environ.copy()
-    env["GLEXEC_CLIENT_CERT"] = cert
-
-    args = [sys.executable, getexec(sys.argv[0])] + sys.argv[1:]
-
-    try:
-        os.execvpe("glexec", args, env)
-    except OSError:
-        return
-
 def connect(jobid, args):
     log.info("connecting to job")
     args = ["condor_ssh_to_job", jobid] + args
