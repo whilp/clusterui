@@ -288,7 +288,7 @@ def submit(tmp, jdl, **kwargs):
 
     return jobid
 
-def cleanup(iwd, user):
+def cleanupjob(iwd, user):
     """Clean up after a job.
 
     Searches for a job with a working directory set to *iwd* owned by *user* and
@@ -423,7 +423,7 @@ def submitdir(cleanup=True, user=None, create=True, **kwargs):
         rmtree(tmp)
         if user is None:
             user = getuser()
-        cleanup(tmp, user)
+        cleanupjob(tmp, user)
 
 def template(out, context):
     """Format iterable JDL *context* and write it to *out*.
