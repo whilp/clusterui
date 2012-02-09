@@ -326,6 +326,7 @@ class Process(Popen):
             raise ProcessError(self)
 
 def hasx509(submit):
+    """Update JDL mapping *submit* with 'X509UserProxy if a proxy is found."""
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
     if os.path.exists(x509):
         # XXX: Can cause condor_submit to fail if a stale/expired proxy is
@@ -334,6 +335,12 @@ def hasx509(submit):
         return x509
 
 def hascvmfs(submit):
+    """Update JDL mapping *submit*'s 'requirements' expression.
+
+    If a CVMFS mount is found, require that TARGET advertize a CVMFS catalog
+    revision greater than or equal to the local catalog revision. Otherwise,
+    require a revision greater than 0.
+    """
     cmscvmfs = "/cvmfs/cms.hep.wisc.edu"
     try:
         with open(os.devnull, 'w') as null:
