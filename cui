@@ -81,14 +81,14 @@ def main():
 
     if jobid:
         # Connecting to an existing job, so no tempdir needed.
-        create = preserve = submitdir = prefix = None
+        create = preserve = dir = prefix = None
     else:
         create = True
         prefix = "%s-%s-" % ("clusterui", user)
         preserve = opts.preserve or opts.persist
-        submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
+        dir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
 
-    with submitdir(cleanup=not preserve, dir=submitdir, prefix=prefix, create=True) as tmp:
+    with submitdir(cleanup=not preserve, dir=dir, prefix=prefix, create=True) as tmp:
         try:
             if not jobid:
                 jobid = submit(tmp, SUBMIT, **vars(opts))
