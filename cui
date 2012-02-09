@@ -55,7 +55,8 @@ def main():
     SUBMIT["arguments"] = RUNTIME
 
     hascvmfs(SUBMIT)
-    x509 = hasx509(SUBMIT)
+    if opts.x509:
+        hasx509(SUBMIT)
 
     remoteargs = ["-t", getexecp(sys.argv[0]), "-v", str(verbose)]
     phase = "run"
@@ -126,6 +127,8 @@ options = [
         help="preserve temporary job directory"),
     Opt("-r", "--remote", default=None, action="store",
         help="operate in remote (client) mode; internal"),
+    Opt("-x", "--x509", default=True, action="store_false",
+        help="disable X509 proxy detection"),
 ]
 
 def remote(args, remote="run", **kwargs):
