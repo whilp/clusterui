@@ -60,6 +60,9 @@ def main():
     remoteargs.extend(["-r", phase, "--"])
 
     jobid = opts.id
+    if jobid == "any":
+        jobid = discover()
+
     if jobid:
         global tempdir
         tempdir = faketempdir
@@ -192,6 +195,18 @@ def glexec(submit):
         os.execvpe("glexec", args, env)
     except OSError:
         return
+
+def discover():
+    user = os.environ.get("CLUSTERUI_USER", getpwuid(os.getuid())[0])
+    condor_q = Process(["condor_q",
+        "-con", "IsUIJob==true && Owner == {user}".format(user=user),
+        "-f", "%s\n", "jobid"])
+    condor_q.check()
+
+    jobids = condor_q.stdout.read().splitlines()
+    log.debug("discovered %d active UI jobs", len(jobids))
+    if jobids:
+        return jobids[0]
 
 def connect(jobid, args):
     log.info("connecting to job")
