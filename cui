@@ -161,6 +161,10 @@ def preglexec(args, verbose=0, **kwargs):
     storing the result in the `GLEXEC_ENV` environment variable for later
     restoration.
     """
+    if not getexec("glexec"):
+        log.warn("could not find remote glexec")
+        run(args, **kwargs)
+
     # https://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/GLExec_Environment_Wrap_and_Unwrap_scripts
     log.debug("preparing environment for glexec")
     env = dict(os.environ.copy())
