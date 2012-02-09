@@ -120,8 +120,14 @@ options = [
         help="leave UI job in the queue"),
 ]
 
-def remote(args, **kwargs):
-    phase = kwargs.get("remote", "run")
+def remote(args, remote="run", **kwargs):
+    """Begin a session on the remote side.
+
+    Delegates to one of the phase functions (see :data:`phases`) keyed by
+    *remote*. *args* and *kwargs* are passed directly to the selected phase
+    function.
+    """
+    phase = remote
     log.debug("beginning remote phase %s", phase)
 
     fn = phases.get(phase)
