@@ -105,16 +105,6 @@ def main():
 
             return e.returncode
 
-        # No need to cleanup if we intend to persist.
-        if opts.persist:
-            return condor_ssh_to_job.returncode
-
-        # We don't really care if condor_rm fails here.
-        with open(os.devnull, 'w') as null:
-            jobid = ".".join(jobid.split(".")[:2])
-            condor_rm = Process(["condor_rm", jobid], stdout=null, stderr=null)
-            condor_rm.wait()
-
     return condor_ssh_to_job.returncode
 
 options = [
@@ -299,6 +289,19 @@ def submit(tmp, jdl, **kwargs):
 
     return jobid
 
+def cleanup(iwd, user):
+    """Clean up after a job.
+
+    Searches for a job with a working directory set to *iwd* owned by *user* and
+    removes it from the queue.
+    """
+    condor_rm  = Process(["condor_rm",
+        "-con", 'IsUIJob =?= true && '
+                'Owner == "{user}" && '
+                'Iwd == "{iwd}"'.format(user=user, iwd=iwd),
+        ])
+    condor_rm.check()
+
 def hasx509(submit):
     """Update JDL mapping *submit* with 'X509UserProxy if a proxy is found."""
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
@@ -398,7 +401,7 @@ def monitor(stream):
             return record.id.strip("()")
 
 @contextmanager
-def tempdir(cleanup=True, **kwargs):
+def tempdir(cleanup=True, user=None, **kwargs):
     """Create a temporary directory, removing it and its contents.
 
     *kwargs* are passed to :func:`mkdtemp` to create the directory. Sets the
@@ -413,9 +416,13 @@ def tempdir(cleanup=True, **kwargs):
     try:
         yield tmp
     finally:
-        if cleanup:
-            log.debug("cleaning up temporary directory %s", tmp)
-            rmtree(tmp)
+        if not cleanup:
+            return
+        log.debug("cleaning up temporary directory %s", tmp)
+        rmtree(tmp)
+        if user is None:
+            user = getuser()
+        cleanup(tmp, user)
 
 @contextmanager
 def faketempdir(**kwargs):
