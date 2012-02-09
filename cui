@@ -160,6 +160,12 @@ def preglexec(args, verbose=0, **kwargs):
     os.execvpe("glexec", glexecargs, env)
 
 def postglexec(args, **kwargs):
+    """Restore the runtime environment after glexec.
+
+    Decodes the pre-glexec environment encoded in `$GLEXEC_ENV` using
+    :func:`envdecode` and uses it to update :data:`os.environ` before executing
+    `$SHELL`. If *args* is not empty, they will be passed with '-c' to `$SHELL`.
+    """
     log.debug("restoring environment after glexec")
     env = envdecode(os.environ.pop("GLEXEC_ENV"))
     os.environ.update(env)
