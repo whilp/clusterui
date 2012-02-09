@@ -144,7 +144,9 @@ def preglexec(args, verbose=0, **kwargs):
     The contents of *args* is appended to the argument list used to re-invoke
     this script with glexec in the 'postglexec' phase. The '-v' option passed
     to this script after glexec is constructed using *verbose*; other *kwargs*
-    are currently ignored.
+    are currently ignored. Encodes :data:`os.environ` with :func:`envencode`,
+    storing the result in the `GLEXEC_ENV` environment variable for later
+    restoration.
     """
     # https://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/GLExec_Environment_Wrap_and_Unwrap_scripts
     log.debug("preparing environment for glexec")
