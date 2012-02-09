@@ -61,6 +61,9 @@ def main():
     remoteargs.extend(["-r", phase, "--"])
 
     jobid = opts.id
+    if jobid == "any":
+        jobid = discover()
+
     if jobid:
         global tempdir
         tempdir = faketempdir
@@ -129,23 +132,17 @@ def remote(args, **kwargs):
 
 def preglexec(args, **kwargs):
     # https://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/GLExec_Environment_Wrap_and_Unwrap_scripts
-    # Encoding the environment with JSON is only slightly more expensive (time,
-    # space) than the following, which has the benefit of clarity:
-    # "\0".join("%s=%s" % v for v in os.environ.items())
     log.debug("preparing environment for glexec")
     env = dict(os.environ.copy())
     env["GLEXEC_ENV"] = envencode(env)
     glexecargs = [sys.executable, getexecp(sys.argv[0]),
-        "-v", str(kwargs.get("verbose", -1)),
+        "-v", str(kwargs.pop("verbose", -1)),
         "-r", "postglexec", "--"]
     glexecargs.extend(args)
     log.debug("running `glexec %s`", " ".join(repr(x) for x in glexecargs))
     os.execvpe("glexec", glexecargs, env)
 
 def postglexec(args, **kwargs):
-    # XXX: Because CLUSTERUI_VERBOSE is hidden away in GLEXEC_ENV, the usual log
-    # setup routine can't find it and restore verbosity. This makes all logging
-    # in this function rather useless.
     log.debug("restoring environment after glexec")
     env = envdecode(os.environ.pop("GLEXEC_ENV"))
     os.environ.update(env)
@@ -178,6 +175,45 @@ def envdecode(env):
     return dict(
         b64decode(blob).split("=", 1) for blob in blobs
     )
+
+def glexec(submit):
+    """This works, but:
+
+    *   the job is in the queue as a different user, so condor_rm won't work
+    *   $HOME doesn't exist on the remote end
+    """
+    cert = os.environ.get("GLEXEC_CLIENT_CERT")
+    user = olduser = getpwuid(os.getuid())[0]
+    if cert:
+        log.info("switched to user %s with glexec (GLEXEC_CLIENT_CERT=%s)", user, cert)
+        return
+
+    cert = submit.get("X509UserProxy", os.environ.get("X509_USER_PROXY"))
+    if not cert:
+        log.debug("not switching users with glexec (no X509_USER_PROXY)")
+        return
+
+    env = os.environ.copy()
+    env["GLEXEC_CLIENT_CERT"] = cert
+
+    args = [sys.executable, getexec(sys.argv[0])] + sys.argv[1:]
+
+    try:
+        os.execvpe("glexec", args, env)
+    except OSError:
+        return
+
+def discover():
+    user = os.environ.get("CLUSTERUI_USER", getpwuid(os.getuid())[0])
+    condor_q = Process(["condor_q",
+        "-con", "IsUIJob==true && Owner == {user}".format(user=user),
+        "-f", "%s\n", "jobid"])
+    condor_q.check()
+
+    jobids = condor_q.stdout.read().splitlines()
+    log.debug("discovered %d active UI jobs", len(jobids))
+    if jobids:
+        return jobids[0]
 
 def connect(jobid, args):
     log.info("connecting to job")
@@ -343,6 +379,7 @@ SUBMIT = dict(
         'TARGET.UidDomain == "hep.wisc.edu"'
     ),
 )
+SUBMIT["+IsUIJob"] = "true"
 
 Record = namedtuple("Record", "entry id date time message")
 
