@@ -453,10 +453,16 @@ def faketempdir(**kwargs):
         return
 
 def template(out, context):
+    """Format iterable JDL *context* and write it to *out*.
+
+    *out* should be a file-like object with a `write` method. *context* should
+    be an iterable with (*key*, *value*) pairs.
+    """
     out.write("\n".join("%s = %s" % (k, v) for k, v in context))
     out.write("\n")
     out.write("queue\n")
 
+# Default JDL.
 SUBMIT = dict(
     universe="vanilla",
     notification="never",
