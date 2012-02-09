@@ -129,15 +129,13 @@ def preglexec(args, **kwargs):
     env = dict(os.environ.copy())
     env["GLEXEC_ENV"] = envencode(env)
     glexecargs = [sys.executable, getexecp(sys.argv[0]),
+        "-v", str(kwargs.pop("verbose", -1)),
         "-r", "postglexec", "--"]
     glexecargs.extend(args)
     log.debug("running `glexec %s`", " ".join(repr(x) for x in glexecargs))
     os.execvpe("glexec", glexecargs, env)
 
 def postglexec(args, **kwargs):
-    # XXX: Because CLUSTERUI_VERBOSE is hidden away in GLEXEC_ENV, the usual log
-    # setup routine can't find it and restore verbosity. This makes all logging
-    # in this function rather useless.
     log.debug("restoring environment after glexec")
     env = envdecode(os.environ.pop("GLEXEC_ENV"))
     os.environ.update(env)
