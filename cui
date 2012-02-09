@@ -299,46 +299,6 @@ def submit(tmp, jdl, **kwargs):
 
     return jobid
 
-class ProcessError(CalledProcessError):
-    """Raised when a :class:`Process` fails.
-    
-    Prepares the arguments for :class:`subprocess.CalledProcessError` using
-    *process* and stores it in :attr:`process` for later inspection.
-    """
-    
-    def __init__(self, process=None, **kwargs):
-        super(ProcessError, self).__init__(
-            process.returncode, 
-            ' '.join(process.args),
-            **kwargs)
-        self.process = process
-
-class Process(Popen):
-    """A process.
-
-    Stores *args* in :attr:`args` and formats :attr:`cmd` for later inspection.
-    """
-    
-    def __init__(self, args, stdout=PIPE, stderr=PIPE, **kwargs):
-        self.args = args
-        self.cmd = args[0] + " " + " ".join(repr(x) for x in args[1:])
-        super(Process, self).__init__(args, 
-            stdout=stdout,
-            stderr=stderr,
-            **kwargs)
-
-    def _execute_child(self, *args, **kwargs):
-        """Log a command before executing it."""
-        log.debug("running `%s`", self.cmd)
-        return super(Process, self)._execute_child(*args, **kwargs)
-
-    def check(self):
-        """Wait for the process to return, raising :class:`ProcessError` if it returns a value other than 0."""
-        ret = self.wait()
-
-        if ret != 0:
-            raise ProcessError(self)
-
 def hasx509(submit):
     """Update JDL mapping *submit* with 'X509UserProxy if a proxy is found."""
     x509 = os.environ.get("X509_USER_PROXY", "/tmp/x509up_u%s" % os.getuid())
@@ -475,6 +435,47 @@ def template(out, context):
     out.write("\n".join("%s = %s" % (k, v) for k, v in context))
     out.write("\n")
     out.write("queue\n")
+
+class ProcessError(CalledProcessError):
+    """Raised when a :class:`Process` fails.
+    
+    Prepares the arguments for :class:`subprocess.CalledProcessError` using
+    *process* and stores it in :attr:`process` for later inspection.
+    """
+    
+    def __init__(self, process=None, **kwargs):
+        super(ProcessError, self).__init__(
+            process.returncode, 
+            ' '.join(process.args),
+            **kwargs)
+        self.process = process
+
+class Process(Popen):
+    """A process.
+
+    Stores *args* in :attr:`args` and formats :attr:`cmd` for later inspection.
+    """
+    
+    def __init__(self, args, stdout=PIPE, stderr=PIPE, **kwargs):
+        self.args = args
+        self.cmd = args[0] + " " + " ".join(repr(x) for x in args[1:])
+        super(Process, self).__init__(args, 
+            stdout=stdout,
+            stderr=stderr,
+            **kwargs)
+
+    def _execute_child(self, *args, **kwargs):
+        """Log a command before executing it."""
+        log.debug("running `%s`", self.cmd)
+        return super(Process, self)._execute_child(*args, **kwargs)
+
+    def check(self):
+        """Wait for the process to return, raising :class:`ProcessError` if it returns a value other than 0."""
+        ret = self.wait()
+
+        if ret != 0:
+            raise ProcessError(self)
+
 
 # Default JDL.
 SUBMIT = dict(
