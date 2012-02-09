@@ -105,20 +105,21 @@ def main():
 
 options = [
     Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
+
+    Opt("-P", "--persist", default=False, action="store_true",
+        help="leave UI job in the queue"),
     Opt("-d", "--submit-dir", default=None,
         help="create submit directory under SUBMIT_DIR"),
+    Opt("-g", "--glexec", default=False, action="store_true",
+        help="switch to grid user"),
+    Opt("-i", "--id", default=None, action="store",
+        help="connect to existing job ID"),
     Opt("-n", "--no-submit", default=False, action="store_true",
         help="don't actually submit the UI job (implies -p)"),
     Opt("-p", "--preserve", default=False, action="store_true",
         help="preserve temporary job directory"),
-    Opt("-g", "--glexec", default=False, action="store_true",
-        help="switch to grid user"),
     Opt("-r", "--remote", default=None, action="store",
         help="operate in remote (client) mode; internal"),
-    Opt("-i", "--id", default=None, action="store",
-        help="connect to existing job ID"),
-    Opt("-P", "--persist", default=False, action="store_true",
-        help="leave UI job in the queue"),
 ]
 
 def remote(args, remote="run", **kwargs):
