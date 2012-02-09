@@ -176,6 +176,7 @@ def postglexec(args, **kwargs):
     log.debug("running `%s %s`", shell[0], " ".join(repr(x) for x in shell[1:]))
     return os.execve(shell[0], shell, env)
 
+# Remote runtime phases.
 phases = dict(
     preglexec=preglexec,
     postglexec=postglexec,
@@ -183,16 +184,28 @@ phases = dict(
 
 envblacklist = ("HOME", "LOGNAME", "USER", "X509_USER_PROXY", "_")
 def envblacklisted(key, blacklist=envblacklist):
+    """Return False if *key* should be excluded from the post-glexec environment."""
     return key in envblacklist \
         or key.startswith("_CONDOR")
 
 def envencode(env):
+    """Encode environment dictionary *env*.
+
+    *env* should be a mapping of string keys to string values, like
+    :data:`os.environ`. Returns a base64-encoded string suitable for restoration
+    with :func:`envdecode`.
+    """
     blobs = [b64encode("%s=%s" % (k, v)) for k, v in env.items()
                 if not envblacklisted(k)]
 
     return b64encode(zlib.compress(" ".join(blobs), 9))
 
 def envdecode(env):
+    """Decode the encoded environment in string *env*.
+
+    *env* should be a mapping like :data:`os.environ` encoded with
+    :func:`envdecode`. Returns the decoded mapping.
+    """
     blobs = zlib.decompress(b64decode(env)).split(" ")
 
     return dict(
