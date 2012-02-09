@@ -291,7 +291,7 @@ def monitor(stream):
         if line == "...\n":
             continue
         record = Record(*line.split(None, 4))
-        log.debug("log update: %s %s", record.id, record.message.rstrip())
+        log.debug("log update: %s", line.strip())
         if "Job executing" in record.message:
             return record.id.strip("()")
 
