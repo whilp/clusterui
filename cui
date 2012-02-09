@@ -81,29 +81,18 @@ def main():
 
     if jobid:
         # Connecting to an existing job, so no tempdir needed.
-        global tempdir
-        tempdir = faketempdir
-        preserve = submitdir = prefix = None
+        create = preserve = submitdir = prefix = None
     else:
+        create = True
         prefix = "%s-%s-" % ("clusterui", user)
         preserve = opts.preserve or opts.persist
         submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
 
-    with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
-        try:
-            if not jobid:
-                jobid = submit(tmp, SUBMIT, **vars(opts))
+    with submitdir(cleanup=not preserve, dir=submitdir, prefix=prefix, create=True) as tmp:
+        if not jobid:
+            jobid = submit(tmp, SUBMIT, **vars(opts))
 
-            condor_ssh_to_job = connect(jobid, remoteargs + args)
-        except ProcessError, e:
-            # Command failed, bail.
-            log.debug("%s returned %d", e.process.cmd, e.returncode)
-            if e.process.stdout:
-                sys.stdout.write(e.process.stdout.read())
-            if e.process.stderr:
-                sys.stderr.write(e.process.stderr.read())
-
-            return e.returncode
+        condor_ssh_to_job = connect(jobid, remoteargs + args)
 
     return condor_ssh_to_job.returncode
 
@@ -401,37 +390,39 @@ def monitor(stream):
             return record.id.strip("()")
 
 @contextmanager
-def tempdir(cleanup=True, user=None, **kwargs):
-    """Create a temporary directory, removing it and its contents.
+def submitdir(cleanup=True, user=None, create=True, **kwargs):
+    """Create a submit directory, removing it and its contents.
 
     *kwargs* are passed to :func:`mkdtemp` to create the directory. Sets the
     current working directory to the temporary directory and yields control.
     Then, if *cleanup* is True, removes the temporary directory and its
     contents.
     """
-    tmp = mkdtemp(**kwargs)
-    log.debug("created temporary directory %s", tmp)
-    os.chdir(tmp)
+    if create:
+        tmp = mkdtemp(**kwargs)
+        log.debug("created temporary directory %s", tmp)
+        os.chdir(tmp)
 
     try:
         yield tmp
+    except ProcessError, e:
+        # Command failed, bail.
+        log.debug("%s returned %d", e.process.cmd, e.returncode)
+        if e.process.stdout:
+            sys.stdout.write(e.process.stdout.read())
+        if e.process.stderr:
+            sys.stderr.write(e.process.stderr.read())
+
+        return e.returncode
     finally:
-        if not cleanup:
+        if not (cleanup and create):
             return
+
         log.debug("cleaning up temporary directory %s", tmp)
         rmtree(tmp)
         if user is None:
             user = getuser()
         cleanup(tmp, user)
-
-@contextmanager
-def faketempdir(**kwargs):
-    """Implements an interface like :func:`tempdir` but does nothing."""
-    log.debug("not creating temporary directory")
-    try:
-        yield None
-    finally:
-        return
 
 def template(out, context):
     """Format iterable JDL *context* and write it to *out*.
