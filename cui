@@ -46,6 +46,7 @@ def main():
     remoteargs = ["-t", getexecp(sys.argv[0]), "-v", str(verbose)]
     phase = "run"
 
+    user = getuser()
     cert = os.environ.get("GLEXEC_CLIENT_CERT",
         os.environ.get("X509_USER_PROXY",
             "/tmp/x509_u%d" % os.getuid()))
@@ -60,7 +61,7 @@ def main():
 
     jobid = opts.id
     if jobid == "any":
-        jobid = discover()
+        jobid = discover(user)
         if not jobid:
             log.warn("failed to find a running UI job")
 
@@ -70,7 +71,7 @@ def main():
         tempdir = faketempdir
         preserve = submitdir = prefix = None
     else:
-        prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
+        prefix = "%s-%s-" % ("clusterui", user)
         preserve = opts.no_submit or opts.preserve or opts.persist
         submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
 
@@ -212,8 +213,7 @@ def envdecode(env):
         b64decode(blob).split("=", 1) for blob in blobs
     )
 
-def discover():
-    user = os.environ.get("CLUSTERUI_USER", getpwuid(os.getuid())[0])
+def discover(user):
     condor_q = Process(["condor_q",
         "-con", (
             "IsUIJob == true && "
@@ -318,6 +318,14 @@ def isexec(path):
         return os.path.isfile(path) and os.access(path, os.X_OK)
     except (OSError, IOError):
         return False
+
+def getuser(env=os.environ):
+    """Return the name of the current user.
+
+    If the `$CLUSTERUI_USER` environment variable is defined, return that.
+    Otherwise, return the name associated with the current UID.
+    """
+    return env.get("CLUSTERUI_USER", getpwuid(os.getuid())[0])
 
 def getexec(path):
     if isexec(path):
