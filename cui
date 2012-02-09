@@ -89,12 +89,22 @@ def main():
         submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
 
     with submitdir(cleanup=not preserve, dir=submitdir, prefix=prefix, create=True) as tmp:
-        if not jobid:
-            jobid = submit(tmp, SUBMIT, **vars(opts))
+        try:
+            if not jobid:
+                jobid = submit(tmp, SUBMIT, **vars(opts))
+            condor_ssh_to_job = connect(jobid, remoteargs + args)
+            ret = condor_ssh_to_job.returncode
+        except ProcessError, e:
+            # Command failed, bail.
+            log.debug("%s returned %d", e.process.cmd, e.returncode)
+            if e.process.stdout:
+                sys.stdout.write(e.process.stdout.read())
+            if e.process.stderr:
+                sys.stderr.write(e.process.stderr.read())
 
-        condor_ssh_to_job = connect(jobid, remoteargs + args)
+            ret = e.returncode
 
-    return condor_ssh_to_job.returncode
+    return ret
 
 options = [
     Opt("-v", "--verbose", default=0, help="set logging level to VERBOSE"),
@@ -405,15 +415,6 @@ def submitdir(cleanup=True, user=None, create=True, **kwargs):
 
     try:
         yield tmp
-    except ProcessError, e:
-        # Command failed, bail.
-        log.debug("%s returned %d", e.process.cmd, e.returncode)
-        if e.process.stdout:
-            sys.stdout.write(e.process.stdout.read())
-        if e.process.stderr:
-            sys.stderr.write(e.process.stderr.read())
-
-        return e.returncode
     finally:
         if not (cleanup and create):
             return
