@@ -67,7 +67,7 @@ def main():
         preserve = submitdir = prefix = None
     else:
         prefix = "%s-%s-" % ("clusterui", getpwuid(os.getuid())[0])
-        preserve = opts.no_submit or opts.preserve
+        preserve = opts.no_submit or opts.preserve or opts.persist
         submitdir = os.path.abspath(opts.submit_dir) if opts.submit_dir else None
 
     with tempdir(cleanup=not preserve, dir=submitdir, prefix=prefix) as tmp:
