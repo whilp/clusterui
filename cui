@@ -353,6 +353,7 @@ def hascvmfs(submit):
         " && TARGET.UWCMS_CVMFS_Revision >= %s" % cvmfsrev)
 
 def isexec(path):
+    """Return True if *path* exists and is an executable file."""
     try:
         return os.path.isfile(path) and os.access(path, os.X_OK)
     except (OSError, IOError):
@@ -367,6 +368,12 @@ def getuser(env=os.environ):
     return env.get("CLUSTERUI_USER", getpwuid(os.getuid())[0])
 
 def getexec(path):
+    """Search for *path* among the directories in the `$PATH` environment variable.
+
+    If *path* is an executable file, return it. Otherwise, search each directory
+    in $PATH in order, checking for an executable file named *path* in each.
+    Return None if no match is found.
+    """
     if isexec(path):
         return path
     elif os.path.sep in path:
@@ -379,6 +386,10 @@ def getexec(path):
             return path
 
 def getexecp(path):
+    """Return the absolute path to an executable matching *path*.
+
+    See :func:`getexec`.
+    """
     return os.path.abspath(getexec(path))
 
 def tail(file):
