@@ -63,6 +63,8 @@ def main():
     jobid = opts.id
     if jobid == "any":
         jobid = discover()
+        if not jobid:
+            log.warn("failed to find a running UI job")
 
     if jobid:
         global tempdir
@@ -210,7 +212,7 @@ def discover():
             "IsUIJob == true && "
             'Owner == "{user}" && '
             "JobStatus == {running}").format(user=user, running=2),
-        "-f", "%s\n", "jobid"])
+        "-f", "%s\n", "ClusterId"])
     condor_q.check()
 
     jobids = condor_q.stdout.read().splitlines()
