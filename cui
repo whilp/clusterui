@@ -206,7 +206,10 @@ def glexec(submit):
 def discover():
     user = os.environ.get("CLUSTERUI_USER", getpwuid(os.getuid())[0])
     condor_q = Process(["condor_q",
-        "-con", "IsUIJob==true && Owner == {user}".format(user=user),
+        "-con", (
+            "IsUIJob == true && "
+            'Owner == "{user}" && '
+            "JobStatus == {running}").format(user=user, running=2),
         "-f", "%s\n", "jobid"])
     condor_q.check()
 
