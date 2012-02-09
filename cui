@@ -393,6 +393,12 @@ def getexecp(path):
     return os.path.abspath(getexec(path))
 
 def tail(file):
+    """Read lines as they're appended to *file*.
+
+    *file* should have a `readline` method that returns a string. If the string
+    is empty, this function will sleep briefly before calling `readline` again.
+    Yields lines returned by `readline` indefinitely.
+    """
     while True:
         line = file.readline()
         if not line:
@@ -401,6 +407,14 @@ def tail(file):
             yield line
 
 def monitor(stream):
+    """Monitor a stream of Condor job logs.
+
+    *stream* is an iterable that yields string lines. Lines containing only
+    '...' and a newline are ignored. Other lines are split into four fields by
+    whitespace and used to create :class:`Record` objects. Runs until a
+    :attr:`Record.message` indicates that the job has begun executing and
+    returns the string job ID.
+    """
     for line in stream:
         if line == "...\n":
             continue
