@@ -86,6 +86,9 @@ def main():
 
             return e.returncode
 
+        if opts.persist:
+            return condor_ssh_to_job.returncode
+
         # We don't really care if condor_rm fails here.
         with open(os.devnull, 'w') as null:
             condor_rm = Process(["condor_rm", jobid], stdout=null, stderr=null)
@@ -107,6 +110,8 @@ options = [
         help="operate in remote (client) mode; internal"),
     Opt("-i", "--id", default=None, action="store",
         help="connect to existing job ID"),
+    Opt("-P", "--persist", default=False, action="store_true",
+        help="leave UI job in the queue"),
 ]
 
 def remote(args, **kwargs):
