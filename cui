@@ -79,8 +79,7 @@ def main():
             if not jobid:
                 jobid = submit(tmp, SUBMIT, **vars(opts))
 
-            args = remoteargs + args
-            condor_ssh_to_job = connect(jobid, args)
+            condor_ssh_to_job = connect(jobid, remoteargs + args)
         except ProcessError, e:
             # Command failed, bail.
             log.debug("%s returned %d", e.process.cmd, e.returncode)
@@ -223,8 +222,9 @@ def discover():
 
 def connect(jobid, args):
     log.info("connecting to job")
-    args = ["condor_ssh_to_job", jobid] + args
-    condor_ssh_to_job = Process(args, stdout=None, stderr=None)
+
+    condor_ssh_to_job = Process(["condor_ssh_to_job", jobid] + args,
+        stdout=None, stderr=None)
     try:
         condor_ssh_to_job.check()
     except ProcessError:
@@ -244,8 +244,7 @@ def submit(tmp, jdl, no_submit=False, **kwargs):
         return
 
     log.info("submitting UI job")
-    args = ["condor_submit", submit]
-    condor_submit = Process(args)
+    condor_submit = Process(["condor_submit", submit])
     try:
         condor_submit.check()
     except ProcessError:
