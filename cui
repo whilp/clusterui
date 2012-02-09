@@ -138,13 +138,20 @@ def remote(args, remote="run", **kwargs):
 
     fn(args, **kwargs)
 
-def preglexec(args, **kwargs):
+def preglexec(args, verbose=0, **kwargs):
+    """Prepare the runtime environment for glexec.
+
+    The contents of *args* is appended to the argument list used to re-invoke
+    this script with glexec in the 'postglexec' phase. The '-v' option passed
+    to this script after glexec is constructed using *verbose*; other *kwargs*
+    are currently ignored.
+    """
     # https://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/GLExec_Environment_Wrap_and_Unwrap_scripts
     log.debug("preparing environment for glexec")
     env = dict(os.environ.copy())
     env["GLEXEC_ENV"] = envencode(env)
     glexecargs = [sys.executable, getexecp(sys.argv[0]),
-        "-v", str(kwargs.pop("verbose", -1)),
+        "-v", str(verbose),
         "-r", "postglexec", "--"]
     glexecargs.extend(args)
     log.debug("running `glexec %s`", " ".join(repr(x) for x in glexecargs))
