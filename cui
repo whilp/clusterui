@@ -45,10 +45,6 @@ def main():
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
 
-    # Short circuit if we're in remote mode.
-    if opts.remote:
-        return remote(args, **vars(opts))
-
     SUBMIT["executable"] = SLEEP
     SUBMIT["arguments"] = RUNTIME
 
@@ -57,9 +53,6 @@ def main():
         hasx509(SUBMIT)
 
     user = getuser()
-    remoteargs = ["-t", getexecp(sys.argv[0]), "-v", str(verbose)]
-    phase = "run"
-    remoteargs.extend(["-r", phase, "--"])
 
     jobid = opts.id
     if jobid == "any":
@@ -80,7 +73,7 @@ def main():
         try:
             if not jobid:
                 jobid = submit(tmp, SUBMIT, **vars(opts))
-            condor_ssh_to_job = connect(jobid, remoteargs + args)
+            condor_ssh_to_job = connect(jobid, args)
             ret = condor_ssh_to_job.returncode
         except ProcessError, e:
             # Command failed, bail.
@@ -110,39 +103,9 @@ options = [
         help="connect to existing job ID"),
     Opt("-p", "--preserve", default=False, action="store_true",
         help="preserve temporary job directory"),
-    Opt("-r", "--remote", default=None, action="store",
-        help="operate in remote (client) mode; internal"),
     Opt("-x", "--x509", default=True, action="store_false",
         help="disable X509 proxy detection"),
 ]
-
-def remote(args, remote="run", **kwargs):
-    """Begin a session on the remote side.
-
-    Delegates to one of the phase functions (see :data:`phases`) keyed by
-    *remote*. *args* and *kwargs* are passed directly to the selected phase
-    function.
-    """
-    phase = remote
-    log.debug("beginning remote phase %s", phase)
-
-    fn = phases.get(phase, run)
-    fn(args, **kwargs)
-
-def run(args, env=os.environ, shell="/bin/bash", **kwargs):
-    """Executes a shell.
-
-    Uses *shell* if *env* does not contain a SHELL key. If *args* is not empty,
-    they will be passed with '-c' to the shell. *kwargs* is ignored.
-    """
-    shell = [env.get("SHELL", shell)]
-
-    if args:
-        shell.append("-c")
-    shell.extend(args)
-
-    log.debug("running `%s %s`", shell[0], " ".join(repr(x) for x in shell[1:]))
-    return os.execv(shell[0], shell)
 
 def discover(user):
     """Find running UI jobs for *user*.
