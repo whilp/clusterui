@@ -4,7 +4,6 @@ Run commands or an interactive session in the cluster.
 
 ## Usage
 
-    $ cui -h
     Usage: cui [options] [command]
 
     Submit a UI job and connect to it when it begins to run. If <command> is
@@ -30,9 +29,7 @@ Run commands or an interactive session in the cluster.
       -P, --persist         leave UI job in the queue
       -d SUBMIT_DIR, --submit-dir=SUBMIT_DIR
                             create submit directory under SUBMIT_DIR
-      -g, --glexec          don't switch to grid user
       -i ID, --id=ID        connect to existing job ID
       -p, --preserve        preserve temporary job directory
-      -r REMOTE, --remote=REMOTE
-                            operate in remote (client) mode; internal
+      -x, --x509            disable X509 proxy detection
       -h, --help            show this help message and exit
