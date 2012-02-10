@@ -21,9 +21,7 @@ cleanup does not occur in that case, either.
 import logging
 import os
 import sys
-import zlib
 
-from base64 import b64encode, b64decode
 from collections import namedtuple
 from contextlib import contextmanager
 from optparse import OptionParser, make_option as Opt
@@ -58,20 +56,9 @@ def main():
     if opts.x509:
         hasx509(SUBMIT)
 
+    user = getuser()
     remoteargs = ["-t", getexecp(sys.argv[0]), "-v", str(verbose)]
     phase = "run"
-
-    user = getuser()
-    cert = os.environ.get("GLEXEC_CLIENT_CERT",
-        os.environ.get("X509_USER_PROXY",
-            "/tmp/x509up_u%d" % os.getuid()))
-
-    if opts.glexec and os.path.isfile(cert) and os.access(cert, os.R_OK):
-        log.debug("configuring glexec using cert %s", cert)
-        # The cert will end up in the scratch directory on the remote end.
-        os.environ["GLEXEC_CLIENT_CERT"] = os.path.basename(cert)
-        phase = "preglexec"
-
     remoteargs.extend(["-r", phase, "--"])
 
     jobid = opts.id
@@ -119,8 +106,6 @@ options = [
         help="leave UI job in the queue"),
     Opt("-d", "--submit-dir", default=None,
         help="create submit directory under SUBMIT_DIR"),
-    Opt("-g", "--glexec", default=True, action="store_false",
-        help="don't switch to grid user"),
     Opt("-i", "--id", default=None, action="store",
         help="connect to existing job ID"),
     Opt("-p", "--preserve", default=False, action="store_true",
@@ -158,80 +143,6 @@ def run(args, env=os.environ, shell="/bin/bash", **kwargs):
 
     log.debug("running `%s %s`", shell[0], " ".join(repr(x) for x in shell[1:]))
     return os.execv(shell[0], shell)
-
-def preglexec(args, verbose=0, **kwargs):
-    """Prepare the runtime environment for glexec.
-
-    The contents of *args* is appended to the argument list used to re-invoke
-    this script with glexec in the 'postglexec' phase. The '-v' option passed
-    to this script after glexec is constructed using *verbose*; other *kwargs*
-    are currently ignored. Encodes :data:`os.environ` with :func:`envencode`,
-    storing the result in the `GLEXEC_ENV` environment variable for later
-    restoration.
-    """
-    if not getexec("glexec"):
-        log.warn("could not find remote glexec")
-        run(args, **kwargs)
-
-    # https://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/GLExec_Environment_Wrap_and_Unwrap_scripts
-    log.debug("preparing environment for glexec")
-    env = dict(os.environ.copy())
-    env["GLEXEC_ENV"] = envencode(env)
-    glexecargs = [sys.executable, getexecp(sys.argv[0]),
-        "-v", str(verbose),
-        "-r", "postglexec", "--"]
-    glexecargs.extend(args)
-    log.debug("running `glexec %s`", " ".join(repr(x) for x in glexecargs))
-    os.execvpe("glexec", glexecargs, env)
-
-def postglexec(args, **kwargs):
-    """Restore the runtime environment after glexec.
-
-    Decodes the pre-glexec environment encoded in `$GLEXEC_ENV` using
-    :func:`envdecode` and uses it to update :data:`os.environ` before calling
-    :func:`run`.
-    """
-    log.debug("restoring environment after glexec")
-    env = envdecode(os.environ.pop("GLEXEC_ENV"))
-    os.environ.update(env)
-
-    run(args, **kwargs)
-
-# Remote runtime phases.
-phases = dict(
-    preglexec=preglexec,
-    postglexec=postglexec,
-)
-
-envblacklist = ("HOME", "LOGNAME", "USER", "X509_USER_PROXY", "_")
-def envblacklisted(key, blacklist=envblacklist):
-    """Return False if *key* should be excluded from the post-glexec environment."""
-    return key in envblacklist \
-        or key.startswith("_CONDOR")
-
-def envencode(env):
-    """Encode environment dictionary *env*.
-
-    *env* should be a mapping of string keys to string values, like
-    :data:`os.environ`. Returns a base64-encoded string suitable for restoration
-    with :func:`envdecode`.
-    """
-    blobs = [b64encode("%s=%s" % (k, v)) for k, v in env.items()
-                if not envblacklisted(k)]
-
-    return b64encode(zlib.compress(" ".join(blobs), 9))
-
-def envdecode(env):
-    """Decode the encoded environment in string *env*.
-
-    *env* should be a mapping like :data:`os.environ` encoded with
-    :func:`envdecode`. Returns the decoded mapping.
-    """
-    blobs = zlib.decompress(b64decode(env)).split(" ")
-
-    return dict(
-        b64decode(blob).split("=", 1) for blob in blobs
-    )
 
 def discover(user):
     """Find running UI jobs for *user*.
@@ -483,7 +394,6 @@ class Process(Popen):
 
         if ret != 0:
             raise ProcessError(self)
-
 
 # Default JDL.
 SUBMIT = dict(
