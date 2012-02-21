@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/env python2.6
 """%prog [options] [command]
 
 Submit a UI job and connect to it when it begins to run. If <command> is
