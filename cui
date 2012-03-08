@@ -40,7 +40,10 @@ def main():
     optparser = OptionParser(usage=__doc__, option_list=options)
     (opts, args) = optparser.parse_args()
 
-    verbose = int(opts.verbose)
+    try:
+        verbose = int(opts.verbose)
+    except ValueError:
+        verbose = opts.verbose.count("v")
     if verbose >= 0:
         log.level = max(1, logging.WARNING - (10 * verbose))
         log.addHandler(logging.StreamHandler())
